@@ -1,0 +1,16 @@
+# Sauron gitignore
+
+# Data directories - contains persistent state
+data/
+
+# Environment variables with secrets
+.env
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

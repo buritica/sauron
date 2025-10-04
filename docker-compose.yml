@@ -1,0 +1,105 @@
+# Sauron - The All-Seeing Eye
+# Infrastructure monitoring and observability stack
+
+x-common-settings: &common-settings
+  restart: unless-stopped
+  environment:
+    - TZ=Etc/UTC
+
+services:
+  # Prometheus - Time-series metrics database
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    networks:
+      - sauron
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./config/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./data/prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    <<: *common-settings
+
+  # Grafana - Visualization and dashboards
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    networks:
+      - sauron
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-sauron_sees_all}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    <<: *common-settings
+
+  # Alertmanager - Alert routing and notifications
+  alertmanager:
+    container_name: alertmanager
+    image: prom/alertmanager:latest
+    networks:
+      - sauron
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./data/alertmanager:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    <<: *common-settings
+
+  # cAdvisor - Container metrics exporter
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor:latest
+    networks:
+      - sauron
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    <<: *common-settings
+
+  # Node Exporter - Host system metrics
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter:latest
+    networks:
+      - sauron
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    <<: *common-settings
+
+networks:
+  sauron:
+    driver: bridge

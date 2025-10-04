@@ -1,0 +1,76 @@
+# Prometheus Configuration - Sauron
+# The all-seeing eye of infrastructure monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'sauron'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+
+# Load alert rules
+rule_files:
+  - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Alertmanager
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+        labels:
+          service: 'alertmanager'
+
+  # Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          service: 'grafana'
+
+  # Container metrics via cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'cadvisor'
+
+  # Host system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node-exporter'
+          host: 'local'
+
+  # Morgan media server (external service)
+  # Uncomment and configure after adding exporters to Morgan
+  # - job_name: 'morgan'
+  #   static_configs:
+  #     - targets: ['host.docker.internal:9323']  # Example: Docker daemon metrics
+  #       labels:
+  #         project: 'morgan'
+  #         service: 'docker'
+
+  # Retiro (external service)
+  # Uncomment and configure for HLS streaming monitoring
+  # - job_name: 'retiro'
+  #   static_configs:
+  #     - targets: ['host.docker.internal:9324']
+  #       labels:
+  #         project: 'retiro'
+  #         service: 'hls'

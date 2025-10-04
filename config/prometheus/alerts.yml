@@ -1,0 +1,154 @@
+# Prometheus Alert Rules - Sauron
+# One does not simply ignore these alerts
+
+groups:
+  - name: sauron_critical
+    interval: 30s
+    rules:
+      # Service is down
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes."
+
+      # Container down
+      - alert: ContainerDown
+        expr: absent(container_last_seen{name!=""})
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container monitoring unavailable"
+          description: "cAdvisor is not reporting container metrics"
+
+  - name: sauron_disk
+    interval: 1m
+    rules:
+      # Critical disk space
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}) < 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space on {{ $labels.mountpoint }}"
+          description: "Disk space on {{ $labels.mountpoint }} is below 5% ({{ $value | humanizePercentage }})"
+
+      # Warning disk space
+      - alert: DiskSpaceWarning
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}) < 0.15
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.mountpoint }}"
+          description: "Disk space on {{ $labels.mountpoint }} is below 15% ({{ $value | humanizePercentage }})"
+
+      # High inode usage
+      - alert: HighInodeUsage
+        expr: (node_filesystem_files_free / node_filesystem_files) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High inode usage on {{ $labels.mountpoint }}"
+          description: "Inode usage on {{ $labels.mountpoint }} is above 90%"
+
+  - name: sauron_memory
+    interval: 1m
+    rules:
+      # Container high memory
+      - alert: ContainerHighMemory
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes{container!=""}) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} high memory usage"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit"
+
+      # Host high memory
+      - alert: HostHighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory usage critical"
+          description: "Host memory usage is above 90% ({{ $value | humanizePercentage }})"
+
+  - name: sauron_cpu
+    interval: 1m
+    rules:
+      # High CPU usage
+      - alert: HostHighCPU
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage has been above 80% for 10 minutes ({{ $value | humanize }}%)"
+
+      # Container high CPU
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{container!=""}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} high CPU"
+          description: "Container {{ $labels.name }} CPU usage is high"
+
+  - name: sauron_network
+    interval: 1m
+    rules:
+      # High network errors
+      - alert: HighNetworkErrors
+        expr: rate(node_network_receive_errs_total[5m]) > 10 or rate(node_network_transmit_errs_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network errors on {{ $labels.device }}"
+          description: "Network interface {{ $labels.device }} is experiencing high error rates"
+
+  - name: sauron_container_health
+    interval: 1m
+    rules:
+      # Container restarts
+      - alert: ContainerRestarting
+        expr: rate(container_last_seen[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting"
+          description: "Container {{ $labels.name }} has restarted multiple times in the last 5 minutes"
+
+  - name: sauron_prometheus
+    interval: 1m
+    rules:
+      # Prometheus too many targets down
+      - alert: PrometheusTargetsDown
+        expr: 100 * (count(up == 0) / count(up)) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 10% of Prometheus targets are down"
+          description: "{{ $value | humanizePercentage }} of targets are unreachable"
+
+      # Prometheus config reload failed
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus configuration reload failed"
+          description: "Prometheus configuration reload has failed. Check prometheus logs."

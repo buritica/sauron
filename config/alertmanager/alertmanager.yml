@@ -1,0 +1,68 @@
+# Alertmanager Configuration - Sauron
+# Route and manage alerts
+
+global:
+  resolve_timeout: 5m
+
+# Default route
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+
+  # Child routes
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical'
+      continue: true
+
+    - match:
+        severity: warning
+      receiver: 'warning'
+
+# Inhibition rules - silence certain alerts when others are firing
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+# Receivers configuration
+receivers:
+  # Default receiver (no notifications, just log)
+  - name: 'default'
+
+  # Critical alerts
+  - name: 'critical'
+    # Uncomment and configure your notification method:
+
+    # Slack example:
+    # slack_configs:
+    #   - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+    #     channel: '#alerts-critical'
+    #     title: 'Sauron Alert: {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+    # Discord example:
+    # discord_configs:
+    #   - webhook_url: 'YOUR_DISCORD_WEBHOOK_URL'
+    #     title: 'Critical Alert'
+    #     message: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+    # Email example:
+    # email_configs:
+    #   - to: 'alerts@example.com'
+    #     from: 'sauron@example.com'
+    #     smarthost: 'smtp.example.com:587'
+    #     auth_username: 'username'
+    #     auth_password: 'password'
+    #     headers:
+    #       Subject: 'Critical Alert: {{ .GroupLabels.alertname }}'
+
+  # Warning alerts
+  - name: 'warning'
+    # Configure warning notification channels here

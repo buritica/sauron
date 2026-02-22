@@ -3,8 +3,6 @@
 
 x-common-settings: &common-settings
   restart: unless-stopped
-  environment:
-    - TZ=Etc/UTC
 
 services:
   # Prometheus - Time-series metrics database
@@ -15,6 +13,8 @@ services:
       - sauron
     ports:
       - "9090:9090"
+    environment:
+      - TZ=Etc/UTC
     volumes:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./config/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
@@ -34,16 +34,19 @@ services:
     networks:
       - sauron
     ports:
-      - "3000:3000"
+      - "3030:3000"
     volumes:
       - ./data/grafana:/var/lib/grafana
       - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/provisioning/dashboard-files:/etc/grafana/provisioning/dashboard-files:ro
     environment:
+      - TZ=Etc/UTC
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-sauron_sees_all}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SERVER_ROOT_URL=https://sauron.buriti.ca
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_AUTH_BASIC_ENABLED=true
     <<: *common-settings
 
   # Alertmanager - Alert routing and notifications
@@ -54,6 +57,8 @@ services:
       - sauron
     ports:
       - "9093:9093"
+    environment:
+      - TZ=Etc/UTC
     volumes:
       - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - ./data/alertmanager:/alertmanager
@@ -69,7 +74,9 @@ services:
     networks:
       - sauron
     ports:
-      - "8080:8080"
+      - "8083:8080"
+    environment:
+      - TZ=Etc/UTC
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -89,6 +96,8 @@ services:
       - sauron
     ports:
       - "9100:9100"
+    environment:
+      - TZ=Etc/UTC
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro

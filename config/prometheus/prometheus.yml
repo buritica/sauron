@@ -57,20 +57,14 @@ scrape_configs:
           service: 'node-exporter'
           host: 'local'
 
-  # Morgan media server (external service)
-  # Uncomment and configure after adding exporters to Morgan
-  # - job_name: 'morgan'
-  #   static_configs:
-  #     - targets: ['host.docker.internal:9323']  # Example: Docker daemon metrics
-  #       labels:
-  #         project: 'morgan'
-  #         service: 'docker'
+  # Morgan containers — scraped via cAdvisor on the sauron network
+  # cAdvisor already sees all containers sharing the Colima VM
+  # morgan-specific container metrics come through cadvisor job above
 
-  # Retiro (external service)
-  # Uncomment and configure for HLS streaming monitoring
-  # - job_name: 'retiro'
-  #   static_configs:
-  #     - targets: ['host.docker.internal:9324']
-  #       labels:
-  #         project: 'retiro'
-  #         service: 'hls'
+  # Node exporter for morgan host (same host, different label)
+  - job_name: 'morgan-host'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          project: 'morgan'
+          service: 'host'

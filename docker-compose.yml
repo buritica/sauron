@@ -25,6 +25,7 @@ services:
       - '--storage.tsdb.retention.time=30d'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
+      - '--web.enable-remote-write-receiver'
     <<: *common-settings
 
   # Grafana - Visualization and dashboards
@@ -86,6 +87,66 @@ services:
     privileged: true
     devices:
       - /dev/kmsg
+    <<: *common-settings
+
+  # Loki - Log aggregation backend
+  loki:
+    container_name: loki
+    image: grafana/loki:latest
+    networks:
+      - sauron
+    ports:
+      - "3100:3100"
+    environment:
+      - TZ=Etc/UTC
+    volumes:
+      - ./config/loki/loki.yml:/etc/loki/loki.yml:ro
+      - ./data/loki:/loki
+    command: -config.file=/etc/loki/loki.yml
+    <<: *common-settings
+
+  # Promtail - Log collector (scrapes Docker container logs)
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:latest
+    networks:
+      - sauron
+    environment:
+      - TZ=Etc/UTC
+    volumes:
+      - ./config/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail.yml
+    <<: *common-settings
+
+  # OpenTelemetry Collector - OTLP ingestion and fan-out
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector-contrib:latest
+    networks:
+      - sauron
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    environment:
+      - TZ=Etc/UTC
+    volumes:
+      - ./config/otel-collector/otel-collector.yml:/etc/otelcol-contrib/config.yaml:ro
+    <<: *common-settings
+
+  # Tempo - Distributed tracing backend
+  tempo:
+    container_name: tempo
+    image: grafana/tempo:latest
+    networks:
+      - sauron
+    environment:
+      - TZ=Etc/UTC
+    volumes:
+      - ./config/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - ./data/tempo:/var/tempo
+    command: -config.file=/etc/tempo/tempo.yml
     <<: *common-settings
 
   # Node Exporter - Host system metrics

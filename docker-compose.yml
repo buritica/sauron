@@ -31,7 +31,7 @@ services:
   # Grafana - Visualization and dashboards
   grafana:
     container_name: grafana
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.5.2
     networks:
       - sauron
     ports:
@@ -48,6 +48,8 @@ services:
       - GF_SERVER_ROOT_URL=https://sauron.buriti.ca
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
       - GF_AUTH_BASIC_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     <<: *common-settings
 
   # Alertmanager - Alert routing and notifications
@@ -117,6 +119,7 @@ services:
       - ./config/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /Users/buritica/src/aurelio/logs:/host/aurelio/logs:ro
     command: -config.file=/etc/promtail/promtail.yml
     <<: *common-settings
 
@@ -138,7 +141,7 @@ services:
   # Tempo - Distributed tracing backend
   tempo:
     container_name: tempo
-    image: grafana/tempo:latest
+    image: grafana/tempo:2.9.0
     networks:
       - sauron
     environment:

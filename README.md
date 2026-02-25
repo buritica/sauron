@@ -18,27 +18,22 @@ Monitor multiple projects from a single dashboard:
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│           Sauron Stack                  │
-├─────────────────────────────────────────┤
-│                                         │
-│  Grafana (3000)  ─────┐                │
-│       │               │                │
-│       │               ▼                │
-│       └──────▶  Prometheus (9090)      │
-│                     │                   │
-│                     ├─▶ Alertmanager   │
-│                     │                   │
-│                     ├─▶ cAdvisor        │
-│                     │   (containers)    │
-│                     │                   │
-│                     └─▶ Node Exporter   │
-│                         (host metrics)  │
-└─────────────────────────────────────────┘
-              │
-              ├─▶ Monitor Morgan
-              ├─▶ Monitor Retiro
-              └─▶ Monitor other services
+App (OTLP gRPC/HTTP)
+    │
+    ▼
+OTel Collector (:4317 gRPC, :4318 HTTP)
+    ├── traces  ──→ Tempo (distributed tracing)
+    ├── metrics ──→ Prometheus (remote write)
+    └── logs    ──→ Loki (OTLP push)
+
+Promtail ──→ Loki (Docker container logs)
+
+Prometheus (:9090)
+    ├── cAdvisor (container metrics)
+    └── Node Exporter (host metrics)
+    └── Alertmanager (alert routing)
+
+Grafana (:3030) ──→ Prometheus, Loki, Tempo
 ```
 
 ---
@@ -59,42 +54,36 @@ docker compose down
 
 ### Access Services
 
-- **Grafana**: http://localhost:3000
-  - Default login: `admin` / `sauron_sees_all`
-  - Change password in `.env` file
+- **Grafana**: https://sauron.buriti.ca (Tailscale-only) or http://localhost:3030
+  - Anonymous access enabled (Viewer role)
+  - Admin login: `admin` / password from `GRAFANA_PASSWORD` env var
 
 - **Prometheus**: http://localhost:9090
 - **Alertmanager**: http://localhost:9093
-- **cAdvisor**: http://localhost:8080
+- **cAdvisor**: http://localhost:8083
+- **Loki**: http://localhost:3100 (log queries via Grafana)
+- **OTel Collector**: localhost:4317 (gRPC), localhost:4318 (HTTP)
 
 ---
 
 ## 📊 What's Monitored
 
-### Sauron Itself
-- ✅ Prometheus metrics
-- ✅ Grafana status
-- ✅ Alertmanager health
+### Metrics (Prometheus)
 - ✅ Container metrics (via cAdvisor)
-- ✅ Host system metrics (via Node Exporter)
+- ✅ Host system metrics (via Node Exporter) - CPU, memory, disk, network
+- ✅ OTLP metrics ingestion (via OTel Collector → Prometheus remote write)
 
-### Host System
-- CPU usage
-- Memory usage and availability
-- Disk space and I/O
-- Network traffic and errors
-- Filesystem metrics
+### Logs (Loki)
+- ✅ All Docker container logs (via Promtail docker_sd_configs)
+- ✅ Aurelio application logs (via Promtail static config with JSON pipeline)
 
-### Containers
-- CPU and memory per container
-- Network I/O per container
-- Restart count
-- Container state
+### Traces (Tempo)
+- ✅ Distributed tracing via OTLP (via OTel Collector → Tempo)
+- ✅ Trace-to-log correlation (Loki derived fields link traceId to Tempo)
 
-### Ready to Monitor (requires configuration)
-- Morgan media server services
-- Retiro HLS streaming
-- Custom application metrics
+### Alerts (Alertmanager)
+- ✅ Service down, disk space, CPU/memory thresholds
+- ✅ Container restart loops, high network errors
 
 ---
 
@@ -109,12 +98,24 @@ sauron/
 │   │   └── alerts.yml          # Alert rules
 │   ├── alertmanager/
 │   │   └── alertmanager.yml    # Notification routing
-│   └── grafana/
-│       └── provisioning/       # Dashboard auto-provisioning
+│   ├── grafana/
+│   │   └── provisioning/
+│   │       ├── datasources/    # Prometheus, Loki, Tempo
+│   │       └── dashboard-files/ # Provisioned dashboards
+│   ├── loki/
+│   │   └── loki.yml            # Log aggregation config
+│   ├── promtail/
+│   │   └── promtail.yml        # Log collection config
+│   ├── tempo/
+│   │   └── tempo.yml           # Distributed tracing config
+│   └── otel-collector/
+│       └── otel-collector.yml  # OTLP ingestion and fan-out
 ├── data/                        # Persistent data (gitignored)
 │   ├── prometheus/             # Time-series database
 │   ├── grafana/                # Dashboards and settings
-│   └── alertmanager/           # Alert state
+│   ├── alertmanager/           # Alert state
+│   ├── loki/                   # Log storage
+│   └── tempo/                  # Trace storage
 ├── .env                        # Environment variables
 └── README.md                   # This file
 ```
@@ -213,9 +214,9 @@ docker compose restart alertmanager
 
 ### Creating Custom Dashboards
 
-1. Access Grafana at http://localhost:3000
+1. Access Grafana at https://sauron.buriti.ca or http://localhost:3030
 2. Click "+" → Dashboard → Add visualization
-3. Select Prometheus as data source
+3. Select data source: Prometheus (metrics), Loki (logs), or Tempo (traces)
 4. Build your queries
 
 ---
@@ -307,14 +308,15 @@ docker compose down -v  # Removes volumes and all data
 ## 🔐 Security
 
 ### Access Control
-- Grafana requires authentication (default: admin/sauron_sees_all)
-- Change default password in `.env`
-- Prometheus and Alertmanager have no auth by default (use VPN or firewall)
+- Grafana anonymous access enabled (Viewer role) for Tailscale users
+- Admin login available with password from `GRAFANA_PASSWORD` env var
+- Grafana accessible via HTTPS at sauron.buriti.ca (Caddy reverse proxy in morgan stack)
+- Prometheus and Alertmanager have no auth (only accessible locally or via Tailscale)
 
 ### Network Isolation
 - All services run on isolated `sauron` Docker network
-- Expose only necessary ports
-- Consider using Tailscale for remote access
+- Only necessary ports exposed to host
+- Remote access via Tailscale VPN only
 
 ---
 

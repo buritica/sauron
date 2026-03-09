@@ -42,10 +42,40 @@
       "datasource": { "type": "loki", "uid": "P8E80F9AEF21F6940" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "stacking": { "mode": "normal", "group": "A" }
+          },
           "unit": "short"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "error" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "warn" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "info" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "debug" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
@@ -55,8 +85,8 @@
         {
           "refId": "A",
           "datasource": { "type": "loki", "uid": "P8E80F9AEF21F6940" },
-          "expr": "sum(rate({container=\"$container\"}[1m])) by (logstream)",
-          "legendFormat": "{{logstream}}"
+          "expr": "sum(rate({container=\"$container\"} | detected_level != `` [1m])) by (detected_level)",
+          "legendFormat": "{{detected_level}}"
         }
       ]
     },

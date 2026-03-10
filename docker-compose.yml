@@ -120,6 +120,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /Users/buritica/src/aurelio/logs:/host/aurelio/logs:ro
+      - /Users/buritica/src/botsito/logs:/host/botsito/logs:ro
+      - /Users/buritica/actions-runner-botsito/_diag:/host/runner-botsito/diag:ro
     command: -config.file=/etc/promtail/promtail.yml
     <<: *common-settings
 

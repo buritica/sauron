@@ -1,0 +1,153 @@
+{
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 1
+          },
+          "unit": "ms"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "histogram_quantile(0.5, rate(traces_spanmetrics_latency_bucket{service=\"botsito\"}[5m]))",
+          "legendFormat": "p50 {{span_name}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "histogram_quantile(0.95, rate(traces_spanmetrics_latency_bucket{service=\"botsito\"}[5m]))",
+          "legendFormat": "p95 {{span_name}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Span Duration (p50 / p95)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 1
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "rate(traces_spanmetrics_calls_total{service=\"botsito\"}[5m])",
+          "legendFormat": "{{span_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Span Call Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "tempo",
+        "uid": "PE20A8C6A3B2F1D90"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 3,
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "PE20A8C6A3B2F1D90"
+          },
+          "filters": [
+            {
+              "id": "service-name",
+              "operator": "=",
+              "tag": "service.name",
+              "value": [
+                "botsito"
+              ]
+            }
+          ],
+          "queryType": "traceqlsearch",
+          "refId": "A"
+        }
+      ],
+      "title": "Trace Search",
+      "type": "traces"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "botsito"
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Traces",
+  "uid": "botsito-traces"
+}

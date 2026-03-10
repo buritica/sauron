@@ -1,6 +1,19 @@
 {
   "panels": [
     {
+      "type": "row",
+      "title": "Bot Logs",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 20,
+      "panels": []
+    },
+    {
       "datasource": {
         "type": "loki",
         "uid": "P8E80F9AEF21F6940"
@@ -83,7 +96,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "id": 1,
       "options": {
@@ -121,7 +134,7 @@
         "h": 22,
         "w": 24,
         "x": 0,
-        "y": 6
+        "y": 7
       },
       "id": 2,
       "options": {
@@ -156,7 +169,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 29
       },
       "id": 10,
       "panels": [

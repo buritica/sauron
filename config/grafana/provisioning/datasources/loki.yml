@@ -10,8 +10,7 @@ datasources:
     jsonData:
       derivedFields:
         - datasourceUid: PE20A8C6A3B2F1D90
-          matcherRegex: traceId
-          matcherType: label
+          matcherRegex: '"traceId":"([a-f0-9]+)"'
           name: traceId
           url: "$${__value.raw}"
           urlDisplayLabel: View trace

@@ -24,57 +24,35 @@ scrape_configs:
       - source_labels: ['__meta_docker_compose_project']
         target_label: 'compose_project'
 
-  - job_name: aurelio
+  # Convention: any pino app deployed to ~/deploy/<app>/var/logs/*.log
+  # gets auto-discovered. App identity from pino JSON (name or service field).
+  - job_name: deploy-apps
     static_configs:
       - targets:
           - localhost
         labels:
-          job: aurelio
-          service: aurelio
-          __path__: /host/aurelio/logs/aurelio.log
+          __path__: /host/deploy/*/var/logs/*.log
     pipeline_stages:
       - json:
           expressions:
             level: level
             msg: msg
-            userId: userId
-            messageId: messageId
-            traceId: traceId
-            spanId: spanId
-      - labels:
-          level:
-          userId:
-      - template:
-          source: level_name
-          template: |-
-            {{ if eq .level "10" }}trace{{ else if eq .level "20" }}debug{{ else if eq .level "30" }}info{{ else if eq .level "40" }}warn{{ else if eq .level "50" }}error{{ else if eq .level "60" }}fatal{{ else }}unknown{{ end }}
-      - labels:
-          level_name:
-      - timestamp:
-          source: time
-          format: UnixMs
-
-  - job_name: botsito
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: botsito
-          service: botsito
-          service_name: botsito
-          __path__: /host/botsito/logs/botsito.log
-    pipeline_stages:
-      - json:
-          expressions:
-            level: level
-            msg: msg
+            name: name
+            service: service
             module: module
             channelId: channelId
+            userId: userId
             traceId: traceId
             spanId: spanId
+      - template:
+          source: app
+          template: '{{ if .service }}{{ .service }}{{ else }}{{ .name }}{{ end }}'
       - labels:
+          app:
+          service: app
           level:
           module:
+          userId:
       - template:
           source: level_name
           template: |-

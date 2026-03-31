@@ -6,23 +6,23 @@ x-common-settings: &common-settings
   deploy:
     resources:
       limits:
-        cpus: "0.5"
-        memory: 512M
+        cpus: "0.25"
+        memory: 384M
       reservations:
         cpus: "0.1"
-        memory: 128M
+        memory: 64M
 
-# Heavier services that need more memory
-x-heavy-settings: &heavy-settings
+# Lightweight exporters and agents
+x-light-settings: &light-settings
   <<: *common-settings
   deploy:
     resources:
       limits:
-        cpus: "0.5"
-        memory: 1G
+        cpus: "0.15"
+        memory: 128M
       reservations:
-        cpus: "0.1"
-        memory: 256M
+        cpus: "0.05"
+        memory: 32M
 
 services:
   # Prometheus - Time-series metrics database
@@ -46,7 +46,7 @@ services:
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
       - '--web.enable-remote-write-receiver'
-    <<: *heavy-settings
+    <<: *common-settings
 
   # Grafana - Visualization and dashboards
   grafana:
@@ -70,7 +70,7 @@ services:
       - GF_AUTH_BASIC_ENABLED=true
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
-    <<: *heavy-settings
+    <<: *common-settings
 
   # Alertmanager - Alert routing and notifications
   alertmanager:
@@ -88,7 +88,7 @@ services:
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
-    <<: *common-settings
+    <<: *light-settings
 
   # cAdvisor - Container metrics exporter
   cadvisor:
@@ -125,7 +125,7 @@ services:
       - ./config/loki/loki.yml:/etc/loki/loki.yml:ro
       - ./data/loki:/loki
     command: -config.file=/etc/loki/loki.yml
-    <<: *heavy-settings
+    <<: *common-settings
 
   # Promtail - Log collector (scrapes Docker container logs)
   promtail:
@@ -192,7 +192,7 @@ services:
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    <<: *common-settings
+    <<: *light-settings
 
 networks:
   sauron:

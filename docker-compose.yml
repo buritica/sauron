@@ -3,6 +3,26 @@
 
 x-common-settings: &common-settings
   restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: "0.5"
+        memory: 512M
+      reservations:
+        cpus: "0.1"
+        memory: 128M
+
+# Heavier services that need more memory
+x-heavy-settings: &heavy-settings
+  <<: *common-settings
+  deploy:
+    resources:
+      limits:
+        cpus: "0.5"
+        memory: 1G
+      reservations:
+        cpus: "0.1"
+        memory: 256M
 
 services:
   # Prometheus - Time-series metrics database
@@ -26,7 +46,7 @@ services:
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
       - '--web.enable-remote-write-receiver'
-    <<: *common-settings
+    <<: *heavy-settings
 
   # Grafana - Visualization and dashboards
   grafana:
@@ -50,7 +70,7 @@ services:
       - GF_AUTH_BASIC_ENABLED=true
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
-    <<: *common-settings
+    <<: *heavy-settings
 
   # Alertmanager - Alert routing and notifications
   alertmanager:
@@ -105,7 +125,7 @@ services:
       - ./config/loki/loki.yml:/etc/loki/loki.yml:ro
       - ./data/loki:/loki
     command: -config.file=/etc/loki/loki.yml
-    <<: *common-settings
+    <<: *heavy-settings
 
   # Promtail - Log collector (scrapes Docker container logs)
   promtail:
@@ -119,8 +139,7 @@ services:
       - ./config/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /Users/buritica/src/aurelio/logs:/host/aurelio/logs:ro
-      - /Users/buritica/src/botsito/logs:/host/botsito/logs:ro
+      - /Users/buritica/deploy:/host/deploy:ro
       - /Users/buritica/actions-runner-botsito/_diag:/host/runner-botsito/diag:ro
     command: -config.file=/etc/promtail/promtail.yml
     <<: *common-settings

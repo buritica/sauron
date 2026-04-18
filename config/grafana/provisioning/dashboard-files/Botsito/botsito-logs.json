@@ -1,22 +1,221 @@
 {
+  "title": "Logs",
+  "uid": "botsito-logs",
+  "tags": [
+    "botsito",
+    "logs"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "name": "level",
+        "label": "Level",
+        "type": "custom",
+        "query": "debug : 20,info : 30,warn : 40,error : 50",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "allValue": "0",
+        "multi": false,
+        "hide": 0
+      },
+      {
+        "name": "module_filter",
+        "label": "Module",
+        "type": "query",
+        "datasource": {
+          "type": "loki"
+        },
+        "query": "label_values({app=\"botsito\"}, module)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "hide": 0,
+        "sort": 1
+      },
+      {
+        "name": "channel",
+        "label": "Channel",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "query": "",
+        "hide": 0
+      },
+      {
+        "name": "search",
+        "label": "Search",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "query": "",
+        "hide": 0
+      }
+    ]
+  },
   "panels": [
     {
-      "type": "row",
-      "title": "Bot Logs",
-      "collapsed": false,
+      "id": 10,
+      "title": "Log Volume",
+      "type": "stat",
       "gridPos": {
-        "h": 1,
-        "w": 24,
+        "h": 3,
+        "w": 8,
         "x": 0,
         "y": 0
       },
-      "id": 20,
-      "panels": []
+      "datasource": {
+        "type": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki"
+          },
+          "expr": "count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` [$__range])",
+          "instant": true
+        }
+      ]
     },
     {
+      "id": 11,
+      "title": "Errors",
+      "type": "stat",
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
       "datasource": {
-        "type": "loki",
-        "uid": "P8E80F9AEF21F6940"
+        "type": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki"
+          },
+          "expr": "count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range])",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Warnings",
+      "type": "stat",
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "datasource": {
+        "type": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki"
+          },
+          "expr": "count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= 40 | level < 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range])",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "title": "Log Rate by Level",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
+      "datasource": {
+        "type": "loki"
       },
       "fieldConfig": {
         "defaults": {
@@ -24,8 +223,8 @@
             "mode": "fixed"
           },
           "custom": {
-            "fillOpacity": 10,
-            "lineWidth": 1
+            "lineWidth": 1,
+            "fillOpacity": 10
           },
           "unit": "short"
         },
@@ -39,8 +238,8 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "purple"
                 }
               }
             ]
@@ -54,8 +253,8 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "blue"
                 }
               }
             ]
@@ -69,8 +268,8 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "orange"
                 }
               }
             ]
@@ -84,28 +283,21 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "red"
                 }
               }
             ]
           }
         ]
       },
-      "gridPos": {
-        "h": 6,
-        "w": 24,
-        "x": 0,
-        "y": 1
-      },
-      "id": 1,
       "options": {
         "legend": {
+          "displayMode": "table",
+          "placement": "right",
           "calcs": [
             "sum"
-          ],
-          "displayMode": "table",
-          "placement": "right"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -113,30 +305,28 @@
       },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
+            "type": "loki"
           },
-          "expr": "sum by (level_label) (count_over_time({job=\"botsito\"} | json | __error__=\"\" | level >= $level | label_format level_label=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` [1m]))",
-          "legendFormat": "{{level_label}}",
-          "refId": "A"
+          "expr": "sum by (level_label) (count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level_label=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` [1m]))",
+          "legendFormat": "{{level_label}}"
         }
-      ],
-      "title": "Log Rate by Level",
-      "type": "timeseries"
+      ]
     },
     {
-      "datasource": {
-        "type": "loki",
-        "uid": "P8E80F9AEF21F6940"
-      },
+      "id": 2,
+      "title": "Formatted logs",
+      "type": "logs",
       "gridPos": {
-        "h": 22,
+        "h": 25,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 9
       },
-      "id": 2,
+      "datasource": {
+        "type": "loki"
+      },
       "options": {
         "dedupStrategy": "none",
         "enableLogDetails": true,
@@ -145,221 +335,67 @@
         "showLabels": false,
         "showTime": true,
         "sortOrder": "Descending",
-        "wrapLogMessage": false
+        "wrapLogMessage": true
       },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
+            "type": "loki"
           },
-          "expr": "{job=\"botsito\"} | json | __error__=`` | level >= $level | module =~ `$module_filter.*` | label_format level=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` | line_format `{{ if eq .level \"error\" }}\u26a0\ufe0f{{ else if eq .level \"warn\" }}\u26a0\ufe0f{{ else if eq .level \"info\" }}\u2139\ufe0f{{ else if eq .level \"debug\" }}\ud83d\udcac{{ else }}  {{ end }} [{{ .module }}] {{ .msg }}{{ if .channelId }} channel={{ .channelId }}{{ end }}{{ if .senderName }} from={{ .senderName }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .err }} err={{ .err }}{{ end }}` |~ \"(?i)$search\"",
-          "maxLines": 500,
-          "refId": "A"
+          "expr": "{app=\"botsito\"} | json | __error__=`` | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` | line_format `{{ if eq .level \"error\" }}❌{{ else if eq .level \"warn\" }}⚠️{{ else if eq .level \"info\" }}ℹ️{{ else if eq .level \"debug\" }}💬{{ else }}  {{ end }} [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .model }} model={{ .model }}{{ end }}{{ if .cost }} cost=${{ .cost }}{{ end }}{{ if .agent }} agent={{ .agent }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}` |~ \"(?i)$search\"",
+          "maxLines": 500
         }
-      ],
-      "title": "Formatted logs",
-      "type": "logs"
+      ]
     },
     {
+      "id": 20,
+      "title": "Recent Errors",
       "type": "row",
-      "title": "CI Runner",
-      "collapsed": true,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 34
       },
-      "id": 10,
+      "collapsed": true,
       "panels": [
         {
-          "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "fixed"
-              },
-              "custom": {
-                "fillOpacity": 10,
-                "lineWidth": 1
-              },
-              "unit": "short"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "INFO"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "blue",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "WARN"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "orange",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "ERR"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "red",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
+          "id": 21,
+          "title": "Error Logs",
+          "type": "logs",
           "gridPos": {
-            "h": 6,
-            "w": 24,
-            "x": 0,
-            "y": 29
-          },
-          "id": 11,
-          "options": {
-            "legend": {
-              "calcs": [
-                "sum"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "loki",
-                "uid": "P8E80F9AEF21F6940"
-              },
-              "expr": "sum by (level) (count_over_time({job=\"runner-botsito\"} [1m]))",
-              "legendFormat": "{{level}}",
-              "refId": "A"
-            }
-          ],
-          "title": "Runner Log Rate",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
-          },
-          "gridPos": {
-            "h": 18,
+            "h": 10,
             "w": 24,
             "x": 0,
             "y": 35
           },
-          "id": 12,
+          "datasource": {
+            "type": "loki"
+          },
           "options": {
-            "dedupStrategy": "none",
-            "enableLogDetails": true,
-            "prettifyLogMessage": false,
-            "showCommonLabels": false,
-            "showLabels": false,
             "showTime": true,
-            "sortOrder": "Descending",
-            "wrapLogMessage": false
+            "showLabels": false,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "sortOrder": "Descending"
           },
           "targets": [
             {
+              "refId": "A",
               "datasource": {
-                "type": "loki",
-                "uid": "P8E80F9AEF21F6940"
+                "type": "loki"
               },
-              "expr": "{job=\"runner-botsito\"} | regexp `^\\[(?P<ts>[^\\]]+)\\s+(?P<lvl>\\w+)\\s+(?P<comp>\\w+)\\]\\s*(?P<message>.*)` | line_format `{{ if eq .lvl \"ERR\" }}\u26a0\ufe0f{{ else if eq .lvl \"WARN\" }}\u26a0\ufe0f{{ else }}\u2139\ufe0f{{ end }} [{{ .comp }}] {{ .message }}` |~ \"(?i)$search\"",
-              "maxLines": 500,
-              "refId": "A"
+              "expr": "{app=\"botsito\"} | json | __error__=`` | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` | line_format `❌ [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}` |~ \"(?i)$search\"",
+              "maxLines": 200
             }
-          ],
-          "title": "Runner Logs",
-          "type": "logs"
+          ]
         }
       ]
     }
   ],
-  "refresh": "30s",
-  "schemaVersion": 39,
-  "tags": [
-    "botsito",
-    "logs"
-  ],
-  "templating": {
-    "list": [
-      {
-        "allValue": "0",
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "hide": 0,
-        "includeAll": true,
-        "label": "Level",
-        "multi": false,
-        "name": "level",
-        "query": "debug : 20,info : 30,warn : 40,error : 50",
-        "type": "custom"
-      },
-      {
-        "current": {
-          "text": "",
-          "value": ""
-        },
-        "hide": 0,
-        "label": "Module",
-        "name": "module_filter",
-        "query": "",
-        "type": "textbox"
-      },
-      {
-        "current": {
-          "text": "",
-          "value": ""
-        },
-        "hide": 0,
-        "label": "Search",
-        "name": "search",
-        "query": "",
-        "type": "textbox"
-      }
-    ]
-  },
   "time": {
     "from": "now-1h",
     "to": "now"
-  },
-  "timezone": "browser",
-  "title": "Logs",
-  "uid": "botsito-logs"
+  }
 }

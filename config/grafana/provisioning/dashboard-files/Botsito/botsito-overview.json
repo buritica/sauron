@@ -7,16 +7,61 @@
   "timezone": "browser",
   "refresh": "30s",
   "schemaVersion": 39,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "channel",
+        "label": "Channel",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus"
+        },
+        "query": {
+          "refId": "channel",
+          "query": "label_values(botsito_messages_total, channel)"
+        },
+        "definition": "label_values(botsito_messages_total, channel)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "refresh": 2,
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
   "panels": [
+    {
+      "id": 100,
+      "type": "row",
+      "title": "Overview",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
     {
       "id": 1,
       "title": "Status",
       "type": "stat",
+      "description": "Liveness heuristic — count of log lines in the last 30 minutes. Prometheus scrapes OTLP push from botsito, so there is no up{job=\"botsito\"} series; Loki activity is the best available signal.",
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 6,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "datasource": {
         "type": "loki"
@@ -56,7 +101,12 @@
       },
       "options": {
         "colorMode": "background",
-        "graphMode": "none"
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       },
       "targets": [
         {
@@ -70,26 +120,121 @@
       ]
     },
     {
-      "id": 2,
-      "title": "Messages (24h)",
-      "type": "stat",
+      "id": 12,
+      "title": "Query Outcomes / hour",
+      "type": "timeseries",
+      "description": "Agent SDK query outcomes per hour (success, error, timeout, background, rejected).",
       "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 4,
-        "y": 0
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 1
       },
       "datasource": {
         "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
-          "noValue": "0"
-        }
+          "unit": "short",
+          "min": 0,
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "success"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timeout"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "background"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "skipped"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "text"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "colorMode": "value",
-        "graphMode": "area"
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       },
       "targets": [
         {
@@ -97,7 +242,62 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(increase(botsito_messages_total[24h]))",
+          "expr": "sum by (outcome) (increase(botsito_query_outcome_total{channel=~\"$channel\"}[1h]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "type": "row",
+      "title": "Traffic",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "title": "Messages (24h)",
+      "type": "stat",
+      "description": "Total inbound messages processed in the last 24 hours.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 10
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "0"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\"}[24h]))",
           "legendFormat": "total"
         }
       ]
@@ -106,11 +306,12 @@
       "id": 3,
       "title": "Success Rate (24h)",
       "type": "stat",
+      "description": "Share of messages with outcome=success over the last 24 hours. Red <95%, yellow 95–99%, green >=99%.",
       "gridPos": {
         "h": 4,
-        "w": 5,
-        "x": 9,
-        "y": 0
+        "w": 6,
+        "x": 6,
+        "y": 10
       },
       "datasource": {
         "type": "prometheus"
@@ -118,6 +319,9 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "decimals": 2,
+          "min": 0,
+          "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -127,56 +331,11 @@
               },
               {
                 "color": "yellow",
-                "value": 80
-              },
-              {
-                "color": "green",
                 "value": 95
-              }
-            ]
-          }
-        }
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum(increase(botsito_messages_total{outcome=\"success\"}[24h])) / sum(increase(botsito_messages_total[24h])) * 100"
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "title": "Errors (24h)",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 14,
-        "y": 0
-      },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "noValue": "0",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
               },
               {
-                "color": "red",
-                "value": 1
+                "color": "green",
+                "value": 99
               }
             ]
           }
@@ -184,7 +343,12 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area"
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       },
       "targets": [
         {
@@ -192,40 +356,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(increase(botsito_messages_total{outcome=\"error\"}[24h]))"
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "title": "Avg Query Duration",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 19,
-        "y": 0
-      },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "noValue": "—"
-        }
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum(rate(botsito_query_duration_ms_sum[1h])) / (sum(rate(botsito_query_duration_ms_count[1h])) > 0)"
+          "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\", outcome=\"success\"}[24h])) / sum(increase(botsito_messages_total{channel=~\"$channel\"}[24h])) * 100"
         }
       ]
     },
@@ -233,19 +364,23 @@
       "id": 6,
       "title": "Messages / hour",
       "type": "timeseries",
+      "description": "Inbound messages grouped by outcome, per hour.",
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 4
+        "x": 12,
+        "y": 10
       },
       "datasource": {
         "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0,
           "color": {
-            "mode": "fixed"
+            "mode": "palette-classic"
           },
           "custom": {
             "lineWidth": 1,
@@ -332,8 +467,11 @@
       },
       "options": {
         "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -345,510 +483,30 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (outcome) (increase(botsito_messages_total[1h]))",
+          "expr": "sum by (outcome) (increase(botsito_messages_total{channel=~\"$channel\"}[1h]))",
           "legendFormat": "{{outcome}}"
         }
       ]
     },
     {
-      "id": 7,
-      "title": "Query Duration (p50 / p95)",
-      "type": "timeseries",
+      "id": 4,
+      "title": "Errors (24h)",
+      "type": "stat",
+      "description": "Messages with outcome=error over the last 24 hours.",
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 4
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 14
       },
       "datasource": {
         "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
+          "unit": "short",
           "min": 0,
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "lineWidth": 1,
-            "fillOpacity": 10
-          }
-        }
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(botsito_query_duration_ms_bucket[5m])))",
-          "legendFormat": "p50"
-        },
-        {
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(botsito_query_duration_ms_bucket[5m])))",
-          "legendFormat": "p95"
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "title": "Compaction Runs",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 12
-      },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "lineWidth": 1,
-            "fillOpacity": 10
-          }
-        }
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (outcome) (increase(botsito_compaction_runs_total[1h]))",
-          "legendFormat": "{{outcome}}"
-        }
-      ]
-    },
-    {
-      "id": 12,
-      "title": "Query Outcomes / hour",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 12
-      },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "fixed"
-          },
-          "custom": {
-            "lineWidth": 1,
-            "fillOpacity": 10
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "success"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "green"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "red"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "timeout"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "orange"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "background"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "blue"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "rejected"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "purple"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (outcome) (increase(botsito_query_outcome_total[1h]))",
-          "legendFormat": "{{outcome}}"
-        }
-      ]
-    },
-    {
-      "id": 14,
-      "title": "Slowest Queries (24h)",
-      "type": "table",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 20
-      },
-      "datasource": {
-        "type": "loki"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Time"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 180
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "elapsedMs"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "custom.width",
-                "value": 120
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "outcome"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 100
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "channelId"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 200
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "displayName": "elapsedMs",
-            "desc": true
-          }
-        ]
-      },
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "Line",
-            "format": "json",
-            "jsonPaths": [
-              {
-                "path": "channelId",
-                "alias": "channelId"
-              },
-              {
-                "path": "elapsedMs",
-                "alias": "elapsedMs"
-              },
-              {
-                "path": "outcome",
-                "alias": "outcome"
-              },
-              {
-                "path": "senderName",
-                "alias": "sender"
-              },
-              {
-                "path": "traceId",
-                "alias": "traceId"
-              }
-            ],
-            "keepTime": false
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Line": true,
-              "labels": true,
-              "id": true,
-              "tsNs": true,
-              "traceId": true,
-              "time": true,
-              "pid": true,
-              "hostname": true,
-              "name": true,
-              "module": true,
-              "msg": true,
-              "level": true
-            },
-            "indexByName": {
-              "Time": 0,
-              "elapsedMs": 1,
-              "outcome": 2,
-              "sender": 3,
-              "channelId": 4,
-              "traceId": 5
-            }
-          }
-        }
-      ],
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki"
-          },
-          "expr": "{app=\"botsito\"} | json | __error__=`` | msg=`Query ended` | elapsedMs > 30000",
-          "maxLines": 100
-        }
-      ]
-    },
-    {
-      "id": 8,
-      "title": "Recent Errors",
-      "type": "logs",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "datasource": {
-        "type": "loki"
-      },
-      "options": {
-        "dedupStrategy": "none",
-        "showTime": true,
-        "showLabels": false,
-        "wrapLogMessage": true,
-        "enableLogDetails": true,
-        "sortOrder": "Descending"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki"
-          },
-          "expr": "{app=\"botsito\"} | json | __error__=`` | level >= 50 | line_format `❌ [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .model }} model={{ .model }}{{ end }}{{ if .cost }} cost=${{ .cost }}{{ end }}{{ if .agent }} agent={{ .agent }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}`",
-          "maxLines": 100
-        }
-      ]
-    },
-    {
-      "id": 22,
-      "title": "Cache Hit Rate (1h)",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 40
-      },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "noValue": "—",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 30
-              },
-              {
-                "color": "green",
-                "value": 60
-              }
-            ]
-          }
-        }
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum(rate(botsito_cache_read_tokens_total[1h])) / (sum(rate(botsito_cache_read_tokens_total[1h])) + sum(rate(botsito_cache_creation_tokens_total[1h])) + sum(rate(botsito_tokens_input_total[1h]))) * 100"
-        }
-      ]
-    },
-    {
-      "id": 23,
-      "title": "Cost / hour",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 40
-      },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "currencyUSD",
-          "decimals": 3,
-          "noValue": "—"
-        }
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum(rate(botsito_cost_usd_total[1h])) * 3600"
-        }
-      ]
-    },
-    {
-      "id": 24,
-      "title": "Hook Errors (1h)",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 40
-      },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
+          "decimals": 0,
           "noValue": "0",
           "thresholds": {
             "mode": "absolute",
@@ -867,7 +525,12 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area"
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       },
       "targets": [
         {
@@ -875,221 +538,1222 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(increase(botsito_hooks_outcome_total{outcome=\"threw\"}[1h]))"
+          "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\", outcome=\"error\"}[24h]))"
         }
       ]
     },
     {
-      "id": 25,
-      "title": "Cache Tokens (read vs creation vs uncached)",
-      "type": "timeseries",
+      "id": 300,
+      "type": "row",
+      "title": "Latency",
+      "collapsed": true,
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 1,
+        "w": 24,
         "x": 0,
-        "y": 44
+        "y": 18
       },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "fillOpacity": 30,
-            "stacking": {
-              "mode": "normal"
+      "panels": [
+        {
+          "id": 5,
+          "title": "Avg Query Duration (1h)",
+          "type": "stat",
+          "description": "Average SDK query duration over the last hour.",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 19
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "decimals": 0,
+              "min": 0,
+              "noValue": "—"
             }
-          }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(botsito_query_duration_ms_sum{channel=~\"$channel\"}[1h])) / (sum(rate(botsito_query_duration_ms_count{channel=~\"$channel\"}[1h])) > 0)"
+            }
+          ]
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "cache_read"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "green"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "cache_creation"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "orange"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "uncached"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "blue"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "targets": [
         {
-          "refId": "A",
+          "id": 7,
+          "title": "Query Duration (p50 / p95)",
+          "type": "timeseries",
+          "description": "Agent SDK query latency percentiles over a 5-minute rate window.",
+          "gridPos": {
+            "h": 8,
+            "w": 18,
+            "x": 6,
+            "y": 19
+          },
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(rate(botsito_cache_read_tokens_total[5m]))",
-          "legendFormat": "cache_read"
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "histogram_quantile(0.5, sum by (le) (rate(botsito_query_duration_ms_bucket{channel=~\"$channel\"}[5m])))",
+              "legendFormat": "p50"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(botsito_query_duration_ms_bucket{channel=~\"$channel\"}[5m])))",
+              "legendFormat": "p95"
+            }
+          ]
         },
         {
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus"
+          "id": 14,
+          "title": "Slowest Queries (24h)",
+          "type": "table",
+          "description": "Queries whose elapsedMs exceeded 30 s in the last 24 hours, sorted slowest-first.",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 27
           },
-          "expr": "sum(rate(botsito_cache_creation_tokens_total[5m]))",
-          "legendFormat": "cache_creation"
-        },
-        {
-          "refId": "C",
           "datasource": {
-            "type": "prometheus"
+            "type": "loki"
           },
-          "expr": "sum(rate(botsito_tokens_input_total[5m]))",
-          "legendFormat": "uncached"
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "elapsedMs"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 120
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "channelId"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 200
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "elapsedMs",
+                "desc": true
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "jsonPaths": [
+                  {
+                    "path": "channelId",
+                    "alias": "channelId"
+                  },
+                  {
+                    "path": "elapsedMs",
+                    "alias": "elapsedMs"
+                  },
+                  {
+                    "path": "outcome",
+                    "alias": "outcome"
+                  },
+                  {
+                    "path": "senderName",
+                    "alias": "sender"
+                  },
+                  {
+                    "path": "traceId",
+                    "alias": "traceId"
+                  }
+                ],
+                "keepTime": false
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Line": true,
+                  "labels": true,
+                  "id": true,
+                  "tsNs": true,
+                  "traceId": true,
+                  "time": true,
+                  "pid": true,
+                  "hostname": true,
+                  "name": true,
+                  "module": true,
+                  "msg": true,
+                  "level": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "elapsedMs": 1,
+                  "outcome": 2,
+                  "sender": 3,
+                  "channelId": 4,
+                  "traceId": 5
+                }
+              }
+            }
+          ],
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki"
+              },
+              "expr": "{app=\"botsito\"} | json | __error__=`` | msg=`Query ended` | elapsedMs > 30000",
+              "maxLines": 100
+            }
+          ]
         }
       ]
     },
     {
-      "id": 26,
-      "title": "Hook Outcomes / hour",
-      "type": "timeseries",
+      "id": 400,
+      "type": "row",
+      "title": "Economics",
+      "collapsed": true,
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 44
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
       },
-      "datasource": {
-        "type": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "fillOpacity": 30,
-            "stacking": {
-              "mode": "normal"
-            }
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "fired_ok"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "green"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "threw"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "red"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "dropped_malformed"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "orange"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "dropped_subagent"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "blue"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "skipped_unchanged"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "purple"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "targets": [
+      "panels": [
         {
-          "refId": "A",
+          "id": 23,
+          "title": "Cost / hour",
+          "type": "stat",
+          "description": "USD spent on Claude model calls in the last hour. Counter-reset safe via increase().",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 20
+          },
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (outcome) (rate(botsito_hooks_outcome_total[5m]))",
-          "legendFormat": "{{outcome}}"
+          "fieldConfig": {
+            "defaults": {
+              "unit": "currencyUSD",
+              "decimals": 4,
+              "min": 0,
+              "noValue": "—"
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_cost_usd_total{channel_id=~\"$channel\"}[1h]))"
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "title": "Cache Hit Rate (1h)",
+          "type": "stat",
+          "description": "Share of input tokens served from prompt cache over the last hour. Red <30%, yellow 30–50%, green >=50% (issue #619 criteria).",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 20
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 2,
+              "min": 0,
+              "max": 100,
+              "noValue": "—",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 30
+                  },
+                  {
+                    "color": "green",
+                    "value": 50
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[1h])) / (sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[1h])) + sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[1h])) + sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[1h]))) * 100"
+            }
+          ]
+        },
+        {
+          "id": 27,
+          "title": "Fallback Engaged (24h)",
+          "type": "stat",
+          "description": "Queries where the SDK's native fallbackModel swapped to a second model mid-request (added in botsito #647).",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 20
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_agent_fallback_engaged_total{channel=~\"$channel\"}[24h]))"
+            }
+          ]
+        },
+        {
+          "id": 25,
+          "title": "Cache Tokens (read vs creation vs uncached)",
+          "type": "timeseries",
+          "description": "Per-second token rates stacked: cache hits (cache_read), cache writes (cache_creation), and uncached input tokens.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "custom": {
+                "fillOpacity": 30,
+                "stacking": {
+                  "mode": "normal"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "cache_read"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "cache_creation"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "orange"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "uncached"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[5m]))",
+              "legendFormat": "cache_read"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[5m]))",
+              "legendFormat": "cache_creation"
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[5m]))",
+              "legendFormat": "uncached"
+            }
+          ]
+        },
+        {
+          "id": 28,
+          "title": "Tokens (input vs output)",
+          "type": "timeseries",
+          "description": "Agent token rates: input (all sources — uncached + cache_read + cache_creation) vs output, per 5-minute window.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "input"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "output"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "purple"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[5m])) + sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[5m])) + sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[5m]))",
+              "legendFormat": "input"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(botsito_tokens_output_total{channel_id=~\"$channel\"}[5m]))",
+              "legendFormat": "output"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 500,
+      "type": "row",
+      "title": "Reliability",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "panels": [
+        {
+          "id": 24,
+          "title": "Hook Errors (1h)",
+          "type": "stat",
+          "description": "Count of SDK hooks that threw in the last hour.",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 21
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_hooks_outcome_total{outcome=\"threw\"}[1h]))"
+            }
+          ]
+        },
+        {
+          "id": 29,
+          "title": "Extraction Failures (1h)",
+          "type": "stat",
+          "description": "Debounced memory-extraction failures in the last hour (per-channel Gemini extraction errors).",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 21
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_extraction_failures_total{channel=~\"$channel\"}[1h]))"
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "title": "Compaction Runs / hour",
+          "type": "timeseries",
+          "description": "Conversation compaction runs grouped by outcome.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 25
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "success"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum by (outcome) (increase(botsito_compaction_runs_total[1h]))",
+              "legendFormat": "{{outcome}}"
+            }
+          ]
+        },
+        {
+          "id": 26,
+          "title": "Hook Outcomes / hour",
+          "type": "timeseries",
+          "description": "SDK hook outcomes per hour: fired_ok, threw, dropped_malformed, dropped_subagent, skipped_unchanged.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 25
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "custom": {
+                "fillOpacity": 30,
+                "stacking": {
+                  "mode": "normal"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "fired_ok"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "threw"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "dropped_malformed"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "orange"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "dropped_subagent"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "skipped_unchanged"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "text"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum by (outcome) (increase(botsito_hooks_outcome_total[1h]))",
+              "legendFormat": "{{outcome}}"
+            }
+          ]
+        },
+        {
+          "id": 30,
+          "title": "QMD Reindex Health",
+          "type": "timeseries",
+          "description": "QMD reindex lifecycle per hour: triggered / completed / skipped / failed.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 33
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "triggered"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "completed"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "skipped"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "text"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "failed"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_qmd_reindex_triggered_total[1h]))",
+              "legendFormat": "triggered"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_qmd_reindex_completed_total[1h]))",
+              "legendFormat": "completed"
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_qmd_reindex_skipped_total[1h]))",
+              "legendFormat": "skipped"
+            },
+            {
+              "refId": "D",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_qmd_reindex_failed_total[1h]))",
+              "legendFormat": "failed"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "title": "Recent Errors",
+          "type": "logs",
+          "description": "Botsito log lines at level>=error (Pino level 50), newest first.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 33
+          },
+          "datasource": {
+            "type": "loki"
+          },
+          "options": {
+            "dedupStrategy": "none",
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "sortOrder": "Descending"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki"
+              },
+              "expr": "{app=\"botsito\"} | json | __error__=`` | level >= 50 | line_format `❌ [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .model }} model={{ .model }}{{ end }}{{ if .cost }} cost=${{ .cost }}{{ end }}{{ if .agent }} agent={{ .agent }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}`",
+              "maxLines": 100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 600,
+      "type": "row",
+      "title": "Sub-agents",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "panels": [
+        {
+          "id": 31,
+          "title": "Sub-agent Outcomes / hour",
+          "type": "timeseries",
+          "description": "Completed / failed / stopped runs per sub-agent, per hour. Stacked to expose cumulative traffic and failure share.",
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 22
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 30,
+                "lineWidth": 1,
+                "stacking": {
+                  "mode": "normal"
+                }
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum by (agent_name, outcome) (increase(botsito_subagent_outcome_total[1h]))",
+              "legendFormat": "{{agent_name}} · {{outcome}}"
+            }
+          ]
         }
       ]
     }
-  ],
-  "time": {
-    "from": "now-24h",
-    "to": "now"
-  }
+  ]
 }

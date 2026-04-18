@@ -1,33 +1,168 @@
 {
+  "title": "Traces",
+  "uid": "botsito-traces",
+  "tags": [
+    "botsito"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "fillOpacity": 10,
-            "lineWidth": 1
-          },
-          "unit": "ms"
-        }
-      },
+      "id": 1,
+      "title": "Span Duration (p50 / p95)",
+      "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 1,
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.handle_message$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.sdk_query$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.agent_query$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.compaction$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.get_history$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.extract_memories$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.workflow$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "super-light-blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.ingest\\.sdk_query$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "light-green"
+                }
+              }
+            ]
+          }
+        ]
+      },
       "options": {
         "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -35,54 +170,177 @@
       },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.5, rate(traces_spanmetrics_latency_bucket{service=\"botsito\"}[5m]))",
-          "legendFormat": "p50 {{span_name}}",
-          "refId": "A"
+          "expr": "histogram_quantile(0.5, sum by (le, span_name) (rate(traces_spanmetrics_latency_bucket{service=\"botsito\"}[5m])))",
+          "legendFormat": "p50 {{span_name}}"
         },
         {
+          "refId": "B",
           "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, rate(traces_spanmetrics_latency_bucket{service=\"botsito\"}[5m]))",
-          "legendFormat": "p95 {{span_name}}",
-          "refId": "B"
+          "expr": "histogram_quantile(0.95, sum by (le, span_name) (rate(traces_spanmetrics_latency_bucket{service=\"botsito\"}[5m])))",
+          "legendFormat": "p95 {{span_name}}"
         }
-      ],
-      "title": "Span Duration (p50 / p95)",
-      "type": "timeseries"
+      ]
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "fillOpacity": 10,
-            "lineWidth": 1
-          }
-        }
-      },
+      "id": 2,
+      "title": "Span Call Rate",
+      "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
         "y": 8
       },
-      "id": 2,
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.handle_message$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.sdk_query$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.agent_query$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.compaction$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.get_history$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.extract_memories$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.workflow$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "super-light-blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*botsito\\.ingest\\.sdk_query$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "light-green"
+                }
+              }
+            ]
+          }
+        ]
+      },
       "options": {
         "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -90,64 +348,44 @@
       },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "type": "prometheus"
           },
-          "expr": "rate(traces_spanmetrics_calls_total{service=\"botsito\"}[5m])",
-          "legendFormat": "{{span_name}}",
-          "refId": "A"
+          "expr": "sum by (span_name) (rate(traces_spanmetrics_calls_total{service=\"botsito\"}[5m]))",
+          "legendFormat": "{{span_name}}"
         }
-      ],
-      "title": "Span Call Rate",
-      "type": "timeseries"
+      ]
     },
     {
-      "datasource": {
-        "type": "tempo",
-        "uid": "PE20A8C6A3B2F1D90"
-      },
+      "id": 3,
+      "title": "Trace Search",
+      "type": "table",
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 24,
         "x": 0,
         "y": 16
       },
-      "id": 3,
+      "datasource": {
+        "type": "tempo"
+      },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
-            "type": "tempo",
-            "uid": "PE20A8C6A3B2F1D90"
+            "type": "tempo"
           },
-          "filters": [
-            {
-              "id": "service-name",
-              "operator": "=",
-              "tag": "service.name",
-              "value": [
-                "botsito"
-              ]
-            }
-          ],
-          "queryType": "traceqlsearch",
-          "refId": "A"
+          "queryType": "traceql",
+          "query": "{resource.service.name = \"botsito\"}",
+          "limit": 30,
+          "tableType": "traces"
         }
-      ],
-      "title": "Trace Search",
-      "type": "traces"
+      ]
     }
-  ],
-  "refresh": "30s",
-  "schemaVersion": 39,
-  "tags": [
-    "botsito"
   ],
   "time": {
     "from": "now-1h",
     "to": "now"
-  },
-  "timezone": "browser",
-  "title": "Traces",
-  "uid": "botsito-traces"
+  }
 }

@@ -8,9 +8,13 @@ datasources:
     isDefault: false
     editable: false
     jsonData:
+      # Links JSON log lines containing `"traceId":"<hex>"` to the Tempo trace view.
+      # Ported from buritica/botsito's create-dashboards.ts deploy script (#621),
+      # which had to inject this via the Grafana API. Native provisioning is the
+      # correct home for datasource-level config.
       derivedFields:
-        - datasourceUid: PE20A8C6A3B2F1D90
-          matcherRegex: '"traceId":"([a-f0-9]+)"'
-          name: traceId
+        - name: traceId
+          matcherRegex: '"traceId"\s*:\s*"([a-f0-9]+)"'
           url: "$${__value.raw}"
-          urlDisplayLabel: View trace
+          datasourceUid: PE20A8C6A3B2F1D90
+          urlDisplayLabel: View Trace

@@ -1754,6 +1754,310 @@
           ]
         }
       ]
+    },
+    {
+      "id": 700,
+      "type": "row",
+      "title": "Resume",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "panels": [
+        {
+          "id": 32,
+          "title": "Orphans Found (24h)",
+          "type": "stat",
+          "description": "Orphaned queries found at startup in the last 24 hours.",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 23
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0"
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_resume_orphans_found_total[24h]))"
+            }
+          ]
+        },
+        {
+          "id": 33,
+          "title": "Orphans Resumed (24h)",
+          "type": "stat",
+          "description": "Orphaned queries successfully resumed in the last 24 hours.",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 23
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_resume_orphans_resumed_total[24h]))"
+            }
+          ]
+        },
+        {
+          "id": 34,
+          "title": "Orphans Failed (24h)",
+          "type": "stat",
+          "description": "Orphaned queries that failed to resume in the last 24 hours.",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 23
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_resume_orphans_failed_total[24h]))"
+            }
+          ]
+        },
+        {
+          "id": 35,
+          "title": "Resume Outcomes",
+          "type": "timeseries",
+          "description": "Resume outcomes over time: orphans resumed (by method: session vs text), failed, skipped, queue resumed, queue dropped.",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 27
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "resumed.*"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "failed.*"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "skipped"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "text"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "queue dropped"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "orange"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum by (method) (increase(botsito_resume_orphans_resumed_total[1h]))",
+              "legendFormat": "resumed ({{method}})"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_resume_orphans_failed_total[1h]))",
+              "legendFormat": "failed"
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_resume_orphans_skipped_total[1h]))",
+              "legendFormat": "skipped"
+            },
+            {
+              "refId": "D",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_resume_queue_resumed_total[1h]))",
+              "legendFormat": "queue resumed"
+            },
+            {
+              "refId": "E",
+              "datasource": {
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(botsito_resume_queue_dropped_total[1h]))",
+              "legendFormat": "queue dropped"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

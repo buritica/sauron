@@ -836,6 +836,10 @@
                   {
                     "path": "traceId",
                     "alias": "traceId"
+                  },
+                  {
+                    "path": "queryText",
+                    "alias": "query"
                   }
                 ],
                 "keepTime": false
@@ -863,8 +867,9 @@
                   "elapsedMs": 1,
                   "outcome": 2,
                   "sender": 3,
-                  "channelId": 4,
-                  "traceId": 5
+                  "query": 4,
+                  "channelId": 5,
+                  "traceId": 6
                 }
               }
             }

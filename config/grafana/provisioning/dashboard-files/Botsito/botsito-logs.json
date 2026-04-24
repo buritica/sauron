@@ -14,40 +14,35 @@
         "name": "level",
         "label": "Level",
         "type": "custom",
-        "query": "debug : 20,info : 30,warn : 40,error : 50",
+        "query": "all : 0,debug : 20,info : 30,warn : 40,error : 50",
         "current": {
-          "text": "All",
-          "value": "$__all"
+          "text": "all",
+          "value": "0"
         },
-        "includeAll": true,
-        "allValue": "0",
+        "includeAll": false,
         "multi": false,
         "hide": 0
       },
       {
         "name": "module_filter",
         "label": "Module",
-        "type": "query",
-        "datasource": {
-          "type": "loki"
+        "type": "textbox",
+        "current": {
+          "text": ".*",
+          "value": ".*"
         },
-        "query": "label_values({app=\"botsito\"}, module)",
-        "refresh": 2,
-        "includeAll": true,
-        "allValue": ".*",
-        "multi": false,
-        "hide": 0,
-        "sort": 1
+        "query": ".*",
+        "hide": 0
       },
       {
         "name": "channel",
         "label": "Channel",
         "type": "textbox",
         "current": {
-          "text": "",
-          "value": ""
+          "text": ".*",
+          "value": ".*"
         },
-        "query": "",
+        "query": ".*",
         "hide": 0
       },
       {
@@ -75,7 +70,8 @@
         "y": 0
       },
       "datasource": {
-        "type": "loki"
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
       },
       "fieldConfig": {
         "defaults": {
@@ -95,9 +91,10 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` [$__range])",
+          "expr": "sum(count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
           "instant": true
         }
       ]
@@ -113,7 +110,8 @@
         "y": 0
       },
       "datasource": {
-        "type": "loki"
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
       },
       "fieldConfig": {
         "defaults": {
@@ -146,9 +144,10 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range])",
+          "expr": "sum(count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
           "instant": true
         }
       ]
@@ -164,7 +163,8 @@
         "y": 0
       },
       "datasource": {
-        "type": "loki"
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
       },
       "fieldConfig": {
         "defaults": {
@@ -197,9 +197,10 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= 40 | level < 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range])",
+          "expr": "sum(count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= 40 | level < 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
           "instant": true
         }
       ]
@@ -215,7 +216,8 @@
         "y": 3
       },
       "datasource": {
-        "type": "loki"
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
       },
       "fieldConfig": {
         "defaults": {
@@ -307,9 +309,10 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "sum by (level_label) (count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level_label=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` [1m]))",
+          "expr": "sum by (level_label) (count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level_label=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` [$__interval]))",
           "legendFormat": "{{level_label}}"
         }
       ]
@@ -325,7 +328,8 @@
         "y": 9
       },
       "datasource": {
-        "type": "loki"
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
       },
       "options": {
         "dedupStrategy": "none",
@@ -341,7 +345,8 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
           "expr": "{app=\"botsito\"} | json | __error__=`` | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` | line_format `{{ if eq .level \"error\" }}❌{{ else if eq .level \"warn\" }}⚠️{{ else if eq .level \"info\" }}ℹ️{{ else if eq .level \"debug\" }}💬{{ else }}  {{ end }} [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .model }} model={{ .model }}{{ end }}{{ if .cost }} cost=${{ .cost }}{{ end }}{{ if .agent }} agent={{ .agent }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}` |~ \"(?i)$search\"",
           "maxLines": 500
@@ -371,7 +376,8 @@
             "y": 35
           },
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
           "options": {
             "showTime": true,
@@ -384,7 +390,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "loki"
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
               },
               "expr": "{app=\"botsito\"} | json | __error__=`` | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` | line_format `❌ [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}` |~ \"(?i)$search\"",
               "maxLines": 200

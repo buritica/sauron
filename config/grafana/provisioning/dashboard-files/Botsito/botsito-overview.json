@@ -18,7 +18,8 @@
         "label": "Channel",
         "type": "query",
         "datasource": {
-          "type": "prometheus"
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
         },
         "query": {
           "refId": "channel",
@@ -56,7 +57,7 @@
       "id": 1,
       "title": "Status",
       "type": "stat",
-      "description": "Liveness heuristic — count of log lines in the last 30 minutes. Prometheus scrapes OTLP push from botsito, so there is no up{job=\"botsito\"} series; Loki activity is the best available signal.",
+      "description": "Liveness heuristic \u2014 count of log lines in the last 30 minutes. Prometheus scrapes OTLP push from botsito, so there is no up{job=\"botsito\"} series; Loki activity is the best available signal.",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -64,7 +65,8 @@
         "y": 1
       },
       "datasource": {
-        "type": "loki"
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
       },
       "fieldConfig": {
         "defaults": {
@@ -112,9 +114,10 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "count_over_time({app=\"botsito\"}[30m])",
+          "expr": "sum(count_over_time({app=\"botsito\"}[30m]))",
           "instant": true
         }
       ]
@@ -131,7 +134,8 @@
         "y": 1
       },
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -240,7 +244,8 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum by (outcome) (increase(botsito_query_outcome_total{channel=~\"$channel\"}[1h]))",
           "legendFormat": "{{outcome}}"
@@ -272,7 +277,8 @@
         "y": 10
       },
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -295,7 +301,8 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\"}[24h]))",
           "legendFormat": "total"
@@ -306,7 +313,7 @@
       "id": 3,
       "title": "Success Rate (24h)",
       "type": "stat",
-      "description": "Share of messages with outcome=success over the last 24 hours. Red <95%, yellow 95–99%, green >=99%.",
+      "description": "Share of messages with outcome=success over the last 24 hours. Red <95%, yellow 95\u201399%, green >=99%.",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -314,7 +321,8 @@
         "y": 10
       },
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -354,7 +362,8 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\", outcome=\"success\"}[24h])) / sum(increase(botsito_messages_total{channel=~\"$channel\"}[24h])) * 100"
         }
@@ -372,7 +381,8 @@
         "y": 10
       },
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -481,7 +491,8 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum by (outcome) (increase(botsito_messages_total{channel=~\"$channel\"}[1h]))",
           "legendFormat": "{{outcome}}"
@@ -500,7 +511,8 @@
         "y": 14
       },
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -536,9 +548,66 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\", outcome=\"error\"}[24h]))"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "title": "Messages by Transport",
+      "type": "timeseries",
+      "description": "Inbound messages by transport platform (telegram, whatsapp, slack)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 30,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sum by (transport) (increase(botsito_messages_total{channel=~\"$channel\"}[1h]))",
+          "legendFormat": "{{transport}}"
         }
       ]
     },
@@ -566,14 +635,15 @@
             "y": 19
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
               "unit": "ms",
               "decimals": 0,
               "min": 0,
-              "noValue": "—"
+              "noValue": "\u2014"
             }
           },
           "options": {
@@ -589,7 +659,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(botsito_query_duration_ms_sum{channel=~\"$channel\"}[1h])) / (sum(rate(botsito_query_duration_ms_count{channel=~\"$channel\"}[1h])) > 0)"
             }
@@ -607,7 +678,8 @@
             "y": 19
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -640,7 +712,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "histogram_quantile(0.5, sum by (le) (rate(botsito_query_duration_ms_bucket{channel=~\"$channel\"}[5m])))",
               "legendFormat": "p50"
@@ -648,7 +721,8 @@
             {
               "refId": "B",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "histogram_quantile(0.95, sum by (le) (rate(botsito_query_duration_ms_bucket{channel=~\"$channel\"}[5m])))",
               "legendFormat": "p95"
@@ -667,7 +741,8 @@
             "y": 27
           },
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
           "fieldConfig": {
             "defaults": {},
@@ -798,7 +873,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "loki"
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
               },
               "expr": "{app=\"botsito\"} | json | __error__=`` | msg=`Query ended` | elapsedMs > 30000",
               "maxLines": 100
@@ -831,14 +907,15 @@
             "y": 20
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
               "unit": "currencyUSD",
               "decimals": 4,
               "min": 0,
-              "noValue": "—"
+              "noValue": "\u2014"
             }
           },
           "options": {
@@ -854,7 +931,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_cost_usd_total{channel_id=~\"$channel\"}[1h]))"
             }
@@ -864,7 +942,7 @@
           "id": 22,
           "title": "Cache Hit Rate (1h)",
           "type": "stat",
-          "description": "Share of input tokens served from prompt cache over the last hour. Red <30%, yellow 30–50%, green >=50% (issue #619 criteria).",
+          "description": "Share of input tokens served from prompt cache over the last hour. Red <30%, yellow 30\u201350%, green >=50% (issue #619 criteria).",
           "gridPos": {
             "h": 4,
             "w": 6,
@@ -872,7 +950,8 @@
             "y": 20
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -880,7 +959,7 @@
               "decimals": 2,
               "min": 0,
               "max": 100,
-              "noValue": "—",
+              "noValue": "\u2014",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -913,7 +992,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[1h])) / (sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[1h])) + sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[1h])) + sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[1h]))) * 100"
             }
@@ -931,7 +1011,8 @@
             "y": 20
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -967,7 +1048,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_agent_fallback_engaged_total{channel=~\"$channel\"}[24h]))"
             }
@@ -985,7 +1067,8 @@
             "y": 24
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1064,7 +1147,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "cache_read"
@@ -1072,7 +1156,8 @@
             {
               "refId": "B",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "cache_creation"
@@ -1080,7 +1165,8 @@
             {
               "refId": "C",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "uncached"
@@ -1091,7 +1177,7 @@
           "id": 28,
           "title": "Tokens (input vs output)",
           "type": "timeseries",
-          "description": "Agent token rates: input (all sources — uncached + cache_read + cache_creation) vs output, per 5-minute window.",
+          "description": "Agent token rates: input (all sources \u2014 uncached + cache_read + cache_creation) vs output, per 5-minute window.",
           "gridPos": {
             "h": 8,
             "w": 12,
@@ -1099,7 +1185,8 @@
             "y": 24
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1164,7 +1251,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[5m])) + sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[5m])) + sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "input"
@@ -1172,10 +1260,65 @@
             {
               "refId": "B",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(botsito_tokens_output_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "output"
+            }
+          ]
+        },
+        {
+          "id": 36,
+          "title": "Cost by Model",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 32
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "currencyUSD",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 30,
+                "lineWidth": 1,
+                "stacking": {
+                  "mode": "normal"
+                }
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum by (model) (increase(botsito_cost_usd_total{channel_id=~\"$channel\"}[1h]))",
+              "legendFormat": "{{model}}"
             }
           ]
         }
@@ -1205,7 +1348,8 @@
             "y": 21
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1241,7 +1385,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_hooks_outcome_total{outcome=\"threw\"}[1h]))"
             }
@@ -1259,7 +1404,8 @@
             "y": 21
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1299,7 +1445,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_extraction_failures_total{channel=~\"$channel\"}[1h]))"
             }
@@ -1317,7 +1464,8 @@
             "y": 25
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1381,7 +1529,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum by (outcome) (increase(botsito_compaction_runs_total[1h]))",
               "legendFormat": "{{outcome}}"
@@ -1400,7 +1549,8 @@
             "y": 25
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1508,7 +1658,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum by (outcome) (increase(botsito_hooks_outcome_total[1h]))",
               "legendFormat": "{{outcome}}"
@@ -1527,7 +1678,8 @@
             "y": 33
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1621,7 +1773,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_qmd_reindex_triggered_total[1h]))",
               "legendFormat": "triggered"
@@ -1629,7 +1782,8 @@
             {
               "refId": "B",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_qmd_reindex_completed_total[1h]))",
               "legendFormat": "completed"
@@ -1637,7 +1791,8 @@
             {
               "refId": "C",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_qmd_reindex_skipped_total[1h]))",
               "legendFormat": "skipped"
@@ -1645,7 +1800,8 @@
             {
               "refId": "D",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_qmd_reindex_failed_total[1h]))",
               "legendFormat": "failed"
@@ -1664,7 +1820,8 @@
             "y": 33
           },
           "datasource": {
-            "type": "loki"
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
           },
           "options": {
             "dedupStrategy": "none",
@@ -1678,10 +1835,156 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "loki"
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
               },
-              "expr": "{app=\"botsito\"} | json | __error__=`` | level >= 50 | line_format `❌ [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .model }} model={{ .model }}{{ end }}{{ if .cost }} cost=${{ .cost }}{{ end }}{{ if .agent }} agent={{ .agent }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}`",
+              "expr": "{app=\"botsito\"} | json | __error__=`` | level >= 50 | line_format `\u274c [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .model }} model={{ .model }}{{ end }}{{ if .cost }} cost=${{ .cost }}{{ end }}{{ if .agent }} agent={{ .agent }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}`",
               "maxLines": 100
+            }
+          ]
+        },
+        {
+          "id": 38,
+          "title": "Errors by Type",
+          "type": "timeseries",
+          "description": "Agent errors categorized by type (agent_stuck, overloaded, agent_timeout, agent_error, transport_error, unknown)",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 41
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "agent_stuck"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "overloaded"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "orange"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "agent_timeout"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "yellow"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "agent_error"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "purple"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "transport_error"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "unknown"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "text"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum by (error_type) (increase(botsito_messages_total{channel=~\"$channel\", outcome=\"error\"}[1h]))",
+              "legendFormat": "{{error_type}}"
             }
           ]
         }
@@ -1711,7 +2014,8 @@
             "y": 22
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1746,10 +2050,73 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum by (agent_name, outcome) (increase(botsito_subagent_outcome_total[1h]))",
-              "legendFormat": "{{agent_name}} · {{outcome}}"
+              "legendFormat": "{{agent_name}} \u00b7 {{outcome}}"
+            }
+          ]
+        },
+        {
+          "id": 39,
+          "title": "Sub-agent Duration (p50 / p95)",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 32
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "histogram_quantile(0.5, sum by (le, agent_name) (rate(botsito_subagent_duration_ms_bucket[5m])))",
+              "legendFormat": "{{agent_name}} p50"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "histogram_quantile(0.95, sum by (le, agent_name) (rate(botsito_subagent_duration_ms_bucket[5m])))",
+              "legendFormat": "{{agent_name}} p95"
             }
           ]
         }
@@ -1779,7 +2146,8 @@
             "y": 23
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1802,7 +2170,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_resume_orphans_found_total[24h]))"
             }
@@ -1820,7 +2189,8 @@
             "y": 23
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1852,7 +2222,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_resume_orphans_resumed_total[24h]))"
             }
@@ -1870,7 +2241,8 @@
             "y": 23
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1906,7 +2278,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_resume_orphans_failed_total[24h]))"
             }
@@ -1924,7 +2297,8 @@
             "y": 27
           },
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -2018,7 +2392,8 @@
             {
               "refId": "A",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum by (method) (increase(botsito_resume_orphans_resumed_total[1h]))",
               "legendFormat": "resumed ({{method}})"
@@ -2026,7 +2401,8 @@
             {
               "refId": "B",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_resume_orphans_failed_total[1h]))",
               "legendFormat": "failed"
@@ -2034,7 +2410,8 @@
             {
               "refId": "C",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_resume_orphans_skipped_total[1h]))",
               "legendFormat": "skipped"
@@ -2042,7 +2419,8 @@
             {
               "refId": "D",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_resume_queue_resumed_total[1h]))",
               "legendFormat": "queue resumed"
@@ -2050,7 +2428,8 @@
             {
               "refId": "E",
               "datasource": {
-                "type": "prometheus"
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(botsito_resume_queue_dropped_total[1h]))",
               "legendFormat": "queue dropped"

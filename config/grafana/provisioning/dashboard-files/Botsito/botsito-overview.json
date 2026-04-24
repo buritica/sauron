@@ -2442,6 +2442,242 @@
           ]
         }
       ]
+    },
+    {
+      "id": 800,
+      "type": "row",
+      "title": "Brain-first compliance",
+      "description": "Tracks botsito.tool_use.invocations \u2014 verifies the brain-first rule fires (brian called before other tools on named-entity messages).",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "panels": [
+        {
+          "id": 41,
+          "title": "Tool invocations / hour \u2014 by tool",
+          "type": "timeseries",
+          "description": "Volume of each tool called per hour. Brian should lead on named-entity queries; sustained absence of brian signals brain-first rule violations.",
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 20,
+                "lineWidth": 1,
+                "stacking": {
+                  "mode": "normal"
+                }
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum by (tool_name) (increase(botsito_tool_use_invocations_total[1h]))",
+              "legendFormat": "{{tool_name}}"
+            }
+          ]
+        },
+        {
+          "id": 42,
+          "title": "Brian share of tool calls (24h)",
+          "type": "stat",
+          "description": "brian calls / total tool calls over last 24h. Should stay above ~20% on typical usage days; a drop toward 0 means the brain-first rule stopped firing.",
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 0,
+            "y": 34
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.1
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.2
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum(increase(botsito_tool_use_invocations_total{agent_name=\"brian\"}[24h])) / sum(increase(botsito_tool_use_invocations_total[24h]))",
+              "legendFormat": "brian share"
+            }
+          ]
+        },
+        {
+          "id": 43,
+          "title": "Brian calls (24h)",
+          "type": "stat",
+          "description": "Raw count of brian tool invocations in the last 24h.",
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 8,
+            "y": 34
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum(increase(botsito_tool_use_invocations_total{agent_name=\"brian\"}[24h]))",
+              "legendFormat": "brian invocations"
+            }
+          ]
+        },
+        {
+          "id": 44,
+          "title": "Tool invocations / hour \u2014 main vs sub-agents",
+          "type": "timeseries",
+          "description": "Distinguishes tool calls from the main agent (agent_name=main) vs sub-agents. Use to verify brian is called from main, not buried inside sub-agent turns.",
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 40
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 20,
+                "lineWidth": 1,
+                "stacking": {
+                  "mode": "normal"
+                }
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum by (tool_name, agent_name) (increase(botsito_tool_use_invocations_total[1h]))",
+              "legendFormat": "{{agent_name}} \u00b7 {{tool_name}}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

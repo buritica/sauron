@@ -140,7 +140,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /Users/buritica/deploy:/host/deploy:ro
-      - /Users/buritica/actions-runner-botsito/_diag:/host/runner-botsito/diag:ro
+      - /Users/buritica/actions-runner-ca/_diag:/host/runner-ca/diag:ro
       - /Users/buritica/var/log:/host/var-log:ro
     command: -config.file=/etc/promtail/promtail.yml
     <<: *common-settings

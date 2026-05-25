@@ -86,15 +86,15 @@ scrape_configs:
           source: time
           format: RFC3339Nano
 
-  - job_name: runner-botsito
+  - job_name: runner-ca
     static_configs:
       - targets:
           - localhost
         labels:
-          job: runner-botsito
-          service: runner-botsito
-          service_name: runner-botsito
-          __path__: /host/runner-botsito/diag/{Runner,Worker}_*.log
+          job: runner-ca
+          service: runner-ca
+          service_name: runner-ca
+          __path__: /host/runner-ca/diag/{Runner,Worker}_*.log
     pipeline_stages:
       - regex:
           expression: '^\[(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z)\s+(?P<level>\w+)\s+(?P<component>\w+)\]\s*(?P<message>.*)'

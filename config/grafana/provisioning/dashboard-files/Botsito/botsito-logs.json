@@ -94,7 +94,7 @@
             "type": "loki",
             "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "sum(count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
+          "expr": "sum(count_over_time({app=\"ca\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
           "instant": true
         }
       ]
@@ -147,7 +147,7 @@
             "type": "loki",
             "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "sum(count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
+          "expr": "sum(count_over_time({app=\"ca\"} | json | __error__=\"\" | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
           "instant": true
         }
       ]
@@ -200,7 +200,7 @@
             "type": "loki",
             "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "sum(count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= 40 | level < 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
+          "expr": "sum(count_over_time({app=\"ca\"} | json | __error__=\"\" | level >= 40 | level < 50 | module =~ `$module_filter` | channelId =~ `$channel` [$__range]))",
           "instant": true
         }
       ]
@@ -312,7 +312,7 @@
             "type": "loki",
             "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "sum by (level_label) (count_over_time({app=\"botsito\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level_label=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` [$__interval]))",
+          "expr": "sum by (level_label) (count_over_time({app=\"ca\"} | json | __error__=\"\" | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level_label=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` [$__interval]))",
           "legendFormat": "{{level_label}}"
         }
       ]
@@ -348,7 +348,7 @@
             "type": "loki",
             "uid": "P8E80F9AEF21F6940"
           },
-          "expr": "{app=\"botsito\"} | json | __error__=`` | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` | line_format `{{ if eq .level \"error\" }}❌{{ else if eq .level \"warn\" }}⚠️{{ else if eq .level \"info\" }}ℹ️{{ else if eq .level \"debug\" }}💬{{ else }}  {{ end }} [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .model }} model={{ .model }}{{ end }}{{ if .cost }} cost=${{ .cost }}{{ end }}{{ if .agent }} agent={{ .agent }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}` |~ \"(?i)$search\"",
+          "expr": "{app=\"ca\"} | json | __error__=`` | level >= $level | module =~ `$module_filter` | channelId =~ `$channel` | label_format level=`{{ if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else }}unknown{{ end }}` | line_format `{{ if eq .level \"error\" }}❌{{ else if eq .level \"warn\" }}⚠️{{ else if eq .level \"info\" }}ℹ️{{ else if eq .level \"debug\" }}💬{{ else }}  {{ end }} [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .elapsedMs }} took={{ .elapsedMs }}ms{{ end }}{{ if .outcome }} outcome={{ .outcome }}{{ end }}{{ if .model }} model={{ .model }}{{ end }}{{ if .cost }} cost=${{ .cost }}{{ end }}{{ if .agent }} agent={{ .agent }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}` |~ \"(?i)$search\"",
           "maxLines": 500
         }
       ]
@@ -393,7 +393,7 @@
                 "type": "loki",
                 "uid": "P8E80F9AEF21F6940"
               },
-              "expr": "{app=\"botsito\"} | json | __error__=`` | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` | line_format `❌ [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}` |~ \"(?i)$search\"",
+              "expr": "{app=\"ca\"} | json | __error__=`` | level >= 50 | module =~ `$module_filter` | channelId =~ `$channel` | line_format `❌ [{{ .module }}] {{ .msg }}{{ if .config }} [{{ .config }}]{{ end }}{{ if .channelId }}{{ if not .config }} channel={{ .channelId }}{{ end }}{{ end }}{{ if .err_message }} err={{ .err_message }}{{ end }}{{ if .traceId }} trace={{ .traceId }}{{ end }}` |~ \"(?i)$search\"",
               "maxLines": 200
             }
           ]

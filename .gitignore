@@ -14,3 +14,4 @@ data/
 .idea/
 *.swp
 *.swo
+.claude/

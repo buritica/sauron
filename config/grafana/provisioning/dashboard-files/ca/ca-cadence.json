@@ -156,7 +156,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum by (task, outcome) (increase(botsito_cadence_outcome_total[1h]))",
+          "expr": "sum by (task, outcome) (increase(ca_cadence_outcome_total[1h]))",
           "legendFormat": "{{task}} \u00b7 {{outcome}}"
         }
       ]
@@ -210,7 +210,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "histogram_quantile(0.5, sum by (le, task) (rate(botsito_cadence_duration_ms_bucket[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le, task) (rate(ca_cadence_duration_ms_bucket[5m])))",
           "legendFormat": "{{task}} p50"
         },
         {
@@ -219,7 +219,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, task) (rate(botsito_cadence_duration_ms_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, task) (rate(ca_cadence_duration_ms_bucket[5m])))",
           "legendFormat": "{{task}} p95"
         }
       ]
@@ -276,7 +276,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(increase(botsito_cadence_outcome_total[24h]))"
+          "expr": "sum(increase(ca_cadence_outcome_total[24h]))"
         }
       ]
     },
@@ -332,7 +332,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(increase(botsito_cadence_outcome_total{outcome=~\"error|timeout\"}[24h]))"
+          "expr": "sum(increase(ca_cadence_outcome_total{outcome=~\"error|timeout\"}[24h]))"
         }
       ]
     },
@@ -388,7 +388,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(increase(botsito_cadence_outcome_total{outcome=\"locked\"}[24h]))"
+          "expr": "sum(increase(ca_cadence_outcome_total{outcome=\"locked\"}[24h]))"
         }
       ]
     },
@@ -431,7 +431,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(rate(botsito_cadence_duration_ms_sum[1h])) / (sum(rate(botsito_cadence_duration_ms_count[1h])) > 0)"
+          "expr": "sum(rate(ca_cadence_duration_ms_sum[1h])) / (sum(rate(ca_cadence_duration_ms_count[1h])) > 0)"
         }
       ]
     },

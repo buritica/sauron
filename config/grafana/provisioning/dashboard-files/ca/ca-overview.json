@@ -23,9 +23,9 @@
         },
         "query": {
           "refId": "channel",
-          "query": "label_values(botsito_messages_total, channel)"
+          "query": "label_values(ca_messages_total, channel)"
         },
-        "definition": "label_values(botsito_messages_total, channel)",
+        "definition": "label_values(ca_messages_total, channel)",
         "includeAll": true,
         "allValue": ".*",
         "multi": false,
@@ -247,7 +247,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum by (outcome) (increase(botsito_query_outcome_total{channel=~\"$channel\"}[1h]))",
+          "expr": "sum by (outcome) (increase(ca_query_outcome_total{channel=~\"$channel\"}[1h]))",
           "legendFormat": "{{outcome}}"
         }
       ]
@@ -304,7 +304,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\"}[24h]))",
+          "expr": "sum(increase(ca_messages_total{channel=~\"$channel\"}[24h]))",
           "legendFormat": "total"
         }
       ]
@@ -365,7 +365,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\", outcome=\"success\"}[24h])) / sum(increase(botsito_messages_total{channel=~\"$channel\"}[24h])) * 100"
+          "expr": "sum(increase(ca_messages_total{channel=~\"$channel\", outcome=\"success\"}[24h])) / sum(increase(ca_messages_total{channel=~\"$channel\"}[24h])) * 100"
         }
       ]
     },
@@ -494,7 +494,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum by (outcome) (increase(botsito_messages_total{channel=~\"$channel\"}[1h]))",
+          "expr": "sum by (outcome) (increase(ca_messages_total{channel=~\"$channel\"}[1h]))",
           "legendFormat": "{{outcome}}"
         }
       ]
@@ -551,7 +551,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(increase(botsito_messages_total{channel=~\"$channel\", outcome=\"error\"}[24h]))"
+          "expr": "sum(increase(ca_messages_total{channel=~\"$channel\", outcome=\"error\"}[24h]))"
         }
       ]
     },
@@ -606,7 +606,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum by (transport) (increase(botsito_messages_total{channel=~\"$channel\"}[1h]))",
+          "expr": "sum by (transport) (increase(ca_messages_total{channel=~\"$channel\"}[1h]))",
           "legendFormat": "{{transport}}"
         }
       ]
@@ -662,7 +662,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(rate(botsito_query_duration_ms_sum{channel=~\"$channel\"}[1h])) / (sum(rate(botsito_query_duration_ms_count{channel=~\"$channel\"}[1h])) > 0)"
+              "expr": "sum(rate(ca_query_duration_ms_sum{channel=~\"$channel\"}[1h])) / (sum(rate(ca_query_duration_ms_count{channel=~\"$channel\"}[1h])) > 0)"
             }
           ]
         },
@@ -715,7 +715,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "histogram_quantile(0.5, sum by (le) (rate(botsito_query_duration_ms_bucket{channel=~\"$channel\"}[5m])))",
+              "expr": "histogram_quantile(0.5, sum by (le) (rate(ca_query_duration_ms_bucket{channel=~\"$channel\"}[5m])))",
               "legendFormat": "p50"
             },
             {
@@ -724,7 +724,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(botsito_query_duration_ms_bucket{channel=~\"$channel\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(ca_query_duration_ms_bucket{channel=~\"$channel\"}[5m])))",
               "legendFormat": "p95"
             }
           ]
@@ -939,7 +939,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_cost_usd_total{channel_id=~\"$channel\"}[1h]))"
+              "expr": "sum(increase(ca_cost_usd_total{channel_id=~\"$channel\"}[1h]))"
             }
           ]
         },
@@ -1000,7 +1000,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[1h])) / (sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[1h])) + sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[1h])) + sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[1h]))) * 100"
+              "expr": "sum(rate(ca_cache_read_tokens_total{channel_id=~\"$channel\"}[1h])) / (sum(rate(ca_cache_read_tokens_total{channel_id=~\"$channel\"}[1h])) + sum(rate(ca_cache_creation_tokens_total{channel_id=~\"$channel\"}[1h])) + sum(rate(ca_tokens_input_total{channel_id=~\"$channel\"}[1h]))) * 100"
             }
           ]
         },
@@ -1056,7 +1056,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_agent_fallback_engaged_total{channel=~\"$channel\"}[24h]))"
+              "expr": "sum(increase(ca_agent_fallback_engaged_total{channel=~\"$channel\"}[24h]))"
             }
           ]
         },
@@ -1155,7 +1155,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[5m]))",
+              "expr": "sum(rate(ca_cache_read_tokens_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "cache_read"
             },
             {
@@ -1164,7 +1164,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[5m]))",
+              "expr": "sum(rate(ca_cache_creation_tokens_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "cache_creation"
             },
             {
@@ -1173,7 +1173,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[5m]))",
+              "expr": "sum(rate(ca_tokens_input_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "uncached"
             }
           ]
@@ -1259,7 +1259,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(rate(botsito_tokens_input_total{channel_id=~\"$channel\"}[5m])) + sum(rate(botsito_cache_read_tokens_total{channel_id=~\"$channel\"}[5m])) + sum(rate(botsito_cache_creation_tokens_total{channel_id=~\"$channel\"}[5m]))",
+              "expr": "sum(rate(ca_tokens_input_total{channel_id=~\"$channel\"}[5m])) + sum(rate(ca_cache_read_tokens_total{channel_id=~\"$channel\"}[5m])) + sum(rate(ca_cache_creation_tokens_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "input"
             },
             {
@@ -1268,7 +1268,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(rate(botsito_tokens_output_total{channel_id=~\"$channel\"}[5m]))",
+              "expr": "sum(rate(ca_tokens_output_total{channel_id=~\"$channel\"}[5m]))",
               "legendFormat": "output"
             }
           ]
@@ -1322,7 +1322,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (model) (increase(botsito_cost_usd_total{channel_id=~\"$channel\"}[1h]))",
+              "expr": "sum by (model) (increase(ca_cost_usd_total{channel_id=~\"$channel\"}[1h]))",
               "legendFormat": "{{model}}"
             }
           ]
@@ -1366,7 +1366,7 @@
             {
               "refId": "A",
               "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-              "expr": "sum(increase(botsito_gemini_cost_usd_total[1h]))"
+              "expr": "sum(increase(ca_gemini_cost_usd_total[1h]))"
             }
           ]
         },
@@ -1401,13 +1401,13 @@
             {
               "refId": "A",
               "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-              "expr": "sum(increase(botsito_gemini_tokens_input_total[1h]))",
+              "expr": "sum(increase(ca_gemini_tokens_input_total[1h]))",
               "legendFormat": "input"
             },
             {
               "refId": "B",
               "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-              "expr": "sum(increase(botsito_gemini_tokens_output_total[1h]))",
+              "expr": "sum(increase(ca_gemini_tokens_output_total[1h]))",
               "legendFormat": "output"
             }
           ]
@@ -1450,7 +1450,7 @@
             {
               "refId": "A",
               "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-              "expr": "sum by (caller) (increase(botsito_gemini_cost_usd_total[1h]))",
+              "expr": "sum by (caller) (increase(ca_gemini_cost_usd_total[1h]))",
               "legendFormat": "{{caller}}"
             }
           ]
@@ -1521,7 +1521,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_hooks_outcome_total{outcome=\"threw\"}[1h]))"
+              "expr": "sum(increase(ca_hooks_outcome_total{outcome=\"threw\"}[1h]))"
             }
           ]
         },
@@ -1581,7 +1581,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_extraction_failures_total{channel=~\"$channel\"}[1h]))"
+              "expr": "sum(increase(ca_extraction_failures_total{channel=~\"$channel\"}[1h]))"
             }
           ]
         },
@@ -1665,7 +1665,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (outcome) (increase(botsito_compaction_runs_total[1h]))",
+              "expr": "sum by (outcome) (increase(ca_compaction_runs_total[1h]))",
               "legendFormat": "{{outcome}}"
             }
           ]
@@ -1794,7 +1794,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (outcome) (increase(botsito_hooks_outcome_total[1h]))",
+              "expr": "sum by (outcome) (increase(ca_hooks_outcome_total[1h]))",
               "legendFormat": "{{outcome}}"
             }
           ]
@@ -1909,7 +1909,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_qmd_reindex_triggered_total[1h]))",
+              "expr": "sum(increase(ca_qmd_reindex_triggered_total[1h]))",
               "legendFormat": "triggered"
             },
             {
@@ -1918,7 +1918,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_qmd_reindex_completed_total[1h]))",
+              "expr": "sum(increase(ca_qmd_reindex_completed_total[1h]))",
               "legendFormat": "completed"
             },
             {
@@ -1927,7 +1927,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_qmd_reindex_skipped_total[1h]))",
+              "expr": "sum(increase(ca_qmd_reindex_skipped_total[1h]))",
               "legendFormat": "skipped"
             },
             {
@@ -1936,7 +1936,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_qmd_reindex_failed_total[1h]))",
+              "expr": "sum(increase(ca_qmd_reindex_failed_total[1h]))",
               "legendFormat": "failed"
             }
           ]
@@ -2116,7 +2116,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (error_type) (increase(botsito_messages_total{channel=~\"$channel\", outcome=\"error\"}[1h]))",
+              "expr": "sum by (error_type) (increase(ca_messages_total{channel=~\"$channel\", outcome=\"error\"}[1h]))",
               "legendFormat": "{{error_type}}"
             }
           ]
@@ -2186,7 +2186,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (agent_name, outcome) (increase(botsito_subagent_outcome_total[1h]))",
+              "expr": "sum by (agent_name, outcome) (increase(ca_subagent_outcome_total[1h]))",
               "legendFormat": "{{agent_name}} \u00b7 {{outcome}}"
             }
           ]
@@ -2239,7 +2239,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "histogram_quantile(0.5, sum by (le, agent_name) (rate(botsito_subagent_duration_ms_bucket[5m])))",
+              "expr": "histogram_quantile(0.5, sum by (le, agent_name) (rate(ca_subagent_duration_ms_bucket[5m])))",
               "legendFormat": "{{agent_name}} p50"
             },
             {
@@ -2248,7 +2248,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "histogram_quantile(0.95, sum by (le, agent_name) (rate(botsito_subagent_duration_ms_bucket[5m])))",
+              "expr": "histogram_quantile(0.95, sum by (le, agent_name) (rate(ca_subagent_duration_ms_bucket[5m])))",
               "legendFormat": "{{agent_name}} p95"
             }
           ]
@@ -2306,7 +2306,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_resume_orphans_found_total[24h]))"
+              "expr": "sum(increase(ca_resume_orphans_found_total[24h]))"
             }
           ]
         },
@@ -2358,7 +2358,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_resume_orphans_resumed_total[24h]))"
+              "expr": "sum(increase(ca_resume_orphans_resumed_total[24h]))"
             }
           ]
         },
@@ -2414,7 +2414,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_resume_orphans_failed_total[24h]))"
+              "expr": "sum(increase(ca_resume_orphans_failed_total[24h]))"
             }
           ]
         },
@@ -2528,7 +2528,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (method) (increase(botsito_resume_orphans_resumed_total[1h]))",
+              "expr": "sum by (method) (increase(ca_resume_orphans_resumed_total[1h]))",
               "legendFormat": "resumed ({{method}})"
             },
             {
@@ -2537,7 +2537,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_resume_orphans_failed_total[1h]))",
+              "expr": "sum(increase(ca_resume_orphans_failed_total[1h]))",
               "legendFormat": "failed"
             },
             {
@@ -2546,7 +2546,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_resume_orphans_skipped_total[1h]))",
+              "expr": "sum(increase(ca_resume_orphans_skipped_total[1h]))",
               "legendFormat": "skipped"
             },
             {
@@ -2555,7 +2555,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_resume_queue_resumed_total[1h]))",
+              "expr": "sum(increase(ca_resume_queue_resumed_total[1h]))",
               "legendFormat": "queue resumed"
             },
             {
@@ -2564,7 +2564,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_resume_queue_dropped_total[1h]))",
+              "expr": "sum(increase(ca_resume_queue_dropped_total[1h]))",
               "legendFormat": "queue dropped"
             }
           ]
@@ -2635,7 +2635,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (tool_name) (increase(botsito_tool_use_invocations_total[1h]))",
+              "expr": "sum by (tool_name) (increase(ca_tool_use_invocations_total[1h]))",
               "legendFormat": "{{tool_name}}"
             }
           ]
@@ -2698,7 +2698,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_tool_use_invocations_total{agent_name=\"brian\"}[24h])) / sum(increase(botsito_tool_use_invocations_total[24h]))",
+              "expr": "sum(increase(ca_tool_use_invocations_total{agent_name=\"brian\"}[24h])) / sum(increase(ca_tool_use_invocations_total[24h]))",
               "legendFormat": "brian share"
             }
           ]
@@ -2744,7 +2744,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum(increase(botsito_tool_use_invocations_total{agent_name=\"brian\"}[24h]))",
+              "expr": "sum(increase(ca_tool_use_invocations_total{agent_name=\"brian\"}[24h]))",
               "legendFormat": "brian invocations"
             }
           ]
@@ -2800,7 +2800,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (tool_name, agent_name) (increase(botsito_tool_use_invocations_total[1h]))",
+              "expr": "sum by (tool_name, agent_name) (increase(ca_tool_use_invocations_total[1h]))",
               "legendFormat": "{{agent_name}} \u00b7 {{tool_name}}"
             }
           ]

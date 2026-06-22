@@ -68,3 +68,13 @@ scrape_configs:
         labels:
           project: 'morgan'
           service: 'host'
+
+  # Native macOS node_exporter on halfmoon — reports real APFS filesystem metrics.
+  # The containerized node-exporter above only sees the Colima VM disk.
+  # node_exporter installed via: brew install node_exporter && brew services start node_exporter
+  - job_name: 'halfmoon-host'
+    static_configs:
+      - targets: ['host.docker.internal:9100']
+        labels:
+          host: 'halfmoon'
+          service: 'node-exporter'

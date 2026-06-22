@@ -6,6 +6,9 @@ data/
 # Environment variables with secrets
 .env
 
+# Alertmanager → ca webhook bearer token (mounted into the container)
+config/alertmanager/webhook-secret
+
 # macOS
 .DS_Store
 

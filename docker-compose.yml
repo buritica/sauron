@@ -110,6 +110,17 @@ services:
     privileged: true
     devices:
       - /dev/kmsg
+    command:
+      # cadvisor was choking on per-container filesystem du/inode scans (single
+      # scans taking minutes on a busy overlayfs after the disk-full event),
+      # hanging its :8080 endpoint → ServiceDown/ContainerDown flapping.
+      # - disable the expensive disk metrics (the fsHandler du scans). Host disk
+      #   usage still comes from node-exporter, which is what the disk alerts use.
+      # - docker_only: skip non-docker cgroups.
+      # - housekeeping_interval 30s: sample far less aggressively than the 1s default.
+      - '--disable_metrics=disk,diskIO,advtcp,hugetlb,memory_numa,percpu,referenced_memory,resctrl,sched,tcp,udp'
+      - '--docker_only=true'
+      - '--housekeeping_interval=30s'
     <<: *common-settings
 
   # Loki - Log aggregation backend

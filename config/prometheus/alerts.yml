@@ -133,9 +133,12 @@ groups:
   - name: sauron_prometheus
     interval: 1m
     rules:
-      # Prometheus too many targets down
+      # Prometheus too many targets down. Expr is a 0..1 ratio so
+      # humanizePercentage renders it correctly (e.g. 0.1429 → "14.29%").
+      # Previously the expr pre-multiplied by 100, so humanizePercentage
+      # multiplied again and printed nonsense like "1429%".
       - alert: PrometheusTargetsDown
-        expr: 100 * (count(up == 0) / count(up)) > 10
+        expr: count(up == 0) / count(up) > 0.1
         for: 5m
         labels:
           severity: warning

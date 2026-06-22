@@ -26,7 +26,9 @@ groups:
           description: "cAdvisor is not reporting container metrics"
 
   - name: sauron_disk
-    interval: 1m
+    # Disk fills slowly — evaluate every 10m (not the global 15s). Cheaper and
+    # avoids transient flapping. The for: debounces below still apply.
+    interval: 10m
     rules:
       # Critical disk space
       - alert: DiskSpaceCritical

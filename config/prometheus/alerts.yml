@@ -156,6 +156,21 @@ groups:
           summary: "Orphaned streaming cursor in ca ({{ $labels.transport }})"
           description: "ca left {{ $value | humanize }} stranded streaming cursor(s) in the last 15m on {{ $labels.transport }} — the orphan-cursor bug (#1657) may have regressed despite the #1659 fix."
 
+      # Deploy-restart stranded cursors above the inherent baseline (ca #1604/#1667).
+      # DISTINCT from outcome="orphaned" (steady-state edit-fail, alerted at zero above).
+      # ca auto-deploys and kills mid-stream within a bounded 3s finalize budget, so a
+      # restart that lands mid-stream LEGITIMATELY strands a placeholder when the finalize
+      # sweep times out — strands are inherent, NOT a regression. This must NOT be
+      # zero-threshold: only fire when the rate exceeds normal deploy churn (> 3/h).
+      - alert: OrphanedStreamingCursorOnRestart
+        expr: sum(increase(ca_streaming_finalize_total{outcome="shutdown_orphaned"}[1h])) > 3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated deploy-restart stranded streaming cursors in ca"
+          description: "ca stranded {{ $value | humanize }} streaming cursor(s) via the shutdown finalize sweep in the last 1h — above the inherent deploy-restart baseline. Check whether deploys are landing mid-stream abnormally often, or whether the 3s finalize budget (#1604) is too tight. Distinct from the steady-state orphan-cursor bug (#1657)."
+
   - name: sauron_prometheus
     interval: 1m
     rules:

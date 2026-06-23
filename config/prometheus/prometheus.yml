@@ -7,6 +7,7 @@ global:
   external_labels:
     monitor: 'sauron'
     environment: 'production'
+    site: 'halfmoon'   # this stack runs on + primarily monitors halfmoon; surfaced in alert titles
 
 # Alertmanager configuration
 alerting:

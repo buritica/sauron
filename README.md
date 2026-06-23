@@ -84,6 +84,7 @@ docker compose down
 ### Alerts (Alertmanager)
 - ✅ Service down, disk space, CPU/memory thresholds
 - ✅ Container restart loops, high network errors
+- 📣 Edge-triggered (fire once on detect, once on recovery) → delivered via the ca webhook to `#watch-ca`. See [Alerts](#-alerts).
 
 ---
 
@@ -131,11 +132,9 @@ Create a `.env` file:
 ```bash
 # Grafana
 GRAFANA_PASSWORD=sauron_sees_all
-
-# Add notification webhooks
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR/WEBHOOK
 ```
+
+Alert delivery is **not** a webhook env var — alerts route through the ca webhook (see [Alerts](#-alerts)). The bearer lives in the gitignored `config/alertmanager/webhook-secret`, not `.env`.
 
 ### Adding Morgan Monitoring
 
@@ -168,34 +167,37 @@ Configure Retiro to expose metrics, then add to `prometheus.yml`.
 
 ## 🚨 Alerts
 
-Sauron includes pre-configured alerts for:
+### Notification model — edge-triggered (Datadog-style)
 
-### Critical
-- Service down (2+ minutes)
-- Disk space < 5%
-- Prometheus configuration reload failed
+Alerts fire **once when an event is detected** and **once when it clears** — no recurring re-notification while a condition holds. Prometheus + Alertmanager is level-based underneath (a rule is "firing" for as long as its condition is true), so this is achieved by configuration, not a native "notify once" flag:
 
-### Warning
-- Disk space < 15%
-- Memory usage > 90%
-- CPU usage > 80% (10+ minutes)
-- Container high memory usage
-- High network errors
-- Container restarting repeatedly
+- `repeat_interval: 1y` in `alertmanager.yml` — effectively never re-page an unchanged firing alert.
+- `send_resolved: true` on the receiver — deliver the one RESOLVED when it clears.
+- `group_by: [alertname]` — collapse all instances of one alert into a single message (the receiver renders the count, e.g. `ServiceDown (5)`), so a burst is one notification, not dozens.
+- `inhibit_rules` — a critical mutes the matching warning; `ServiceDown` mutes the derived `PrometheusTargetsDown` (dependency muting).
 
-### Configuring Notifications
+This matches Datadog's default (notify on state transition, renotify off). To re-enable a safety nudge for persistent criticals, add a child route with a finite `repeat_interval` for `severity: critical` only.
 
-Edit `config/alertmanager/alertmanager.yml` and uncomment your preferred notification method:
-- Slack
-- Discord
-- Email
-- PagerDuty
-- Webhook
+### Delivery — via the ca webhook, not direct Slack
 
-Then restart Alertmanager:
-```bash
-docker compose restart alertmanager
-```
+All alerts route to a single `ca-webhook` receiver: `POST http://host.docker.internal:7071/webhook/alert`, bearer-authed. ca formats firing/resolved groups and posts to the Slack alert channel (`#watch-ca`). There is **no** direct Slack/Discord/PagerDuty config — ca owns the Slack delivery.
+
+- The bearer lives in `config/alertmanager/webhook-secret` (gitignored, mounted into the container as `credentials_file`). It must match `ALERT_WEBHOOK_SECRET` in the ca daemon env. Never commit it.
+- Reload after editing `alertmanager.yml`: `docker kill -s HUP alertmanager` (no restart needed).
+
+### Rules (`config/prometheus/alerts.yml`)
+
+**Critical:** Service down (2m), disk < 5%, Prometheus config-reload failed.
+**Warning:** disk < 15%, memory > 90%, CPU > 80% (10m), high network errors, container restart-looping.
+
+Notes baked into the rules from real incidents:
+- **Disk** rules evaluate every **10m** (`sauron_disk` group `interval`), not the 15s global — disk fills slowly; faster eval just adds flapping. Real host disk comes from the **native halfmoon node_exporter** (`halfmoon-host` target, `host.docker.internal:9100`); the containerized node-exporter only sees the Colima VM disk.
+- **`ContainerRestarting`** uses `changes(container_start_time_seconds[15m]) > 2`. The old `rate(container_last_seen[5m]) > 0` was broken — `container_last_seen` ticks up ~1/s for every *running* container, so it fired for everything permanently and never measured restarts.
+
+### Tuning gotchas (in `docker-compose.yml`)
+
+- **cadvisor** disables the expensive `disk,diskIO,...` metrics + `--docker_only` + `--housekeeping_interval=30s`. Without this it chokes on per-container filesystem scans (minutes-long on a busy overlayfs) and hangs its endpoint → false `ServiceDown`/`ContainerDown` cascades. Per-container fs panels are lost; host disk still comes from node-exporter.
+- **loki** has its own `1G` memory limit (not the shared 384M `*common-settings`). At 384M it OOM-looped (exit 137) — loki 3.x single-binary settles at ~480–520M and spikes higher under query load.
 
 ---
 

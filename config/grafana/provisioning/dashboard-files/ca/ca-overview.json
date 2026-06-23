@@ -2806,6 +2806,328 @@
           ]
         }
       ]
+    },
+    {
+      "id": 900,
+      "type": "row",
+      "title": "Streaming finalize",
+      "description": "Tracks ca.streaming.finalize — verifies the orphan-cursor fix (ca PR #1659 / issue #1657). outcome=orphaned is a stranded ▌ cursor (the bug; alerted via OrphanedStreamingCursor).",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "panels": [
+        {
+          "id": 901,
+          "title": "Orphaned cursors (24h)",
+          "type": "stat",
+          "description": "THE BUG (ca #1657/#1659): stranded streaming cursors (▌) left visible after finalize. Must be 0 in steady state — red if >0.",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0",
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "red", "value": 0.5 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": { "calcs": ["lastNotNull"] }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum(increase(ca_streaming_finalize_total{outcome=\"orphaned\"}[24h]))"
+            }
+          ]
+        },
+        {
+          "id": 902,
+          "title": "Retry exhausted (24h)",
+          "type": "stat",
+          "description": "Finalize edit failed all retries → fell back to delete+repost (degraded but recovered).",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0"
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": { "calcs": ["lastNotNull"] }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum(increase(ca_streaming_finalize_total{outcome=\"retry_exhausted\"}[24h]))"
+            }
+          ]
+        },
+        {
+          "id": 903,
+          "title": "Retry recovered (24h)",
+          "type": "stat",
+          "description": "Transient finalize-edit failure fixed by a retry (health blip; expected occasionally).",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0"
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": { "calcs": ["lastNotNull"] }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum(increase(ca_streaming_finalize_total{outcome=\"retry_recovered\"}[24h]))"
+            }
+          ]
+        },
+        {
+          "id": 904,
+          "title": "Edit failures (24h)",
+          "type": "stat",
+          "description": "Individual failed finalize-edit attempts (rate of transient failures).",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0"
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": { "calcs": ["lastNotNull"] }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum(increase(ca_streaming_finalize_total{outcome=\"edit_failed\"}[24h]))"
+            }
+          ]
+        },
+        {
+          "id": 905,
+          "title": "Streaming finalize outcomes / hour",
+          "type": "timeseries",
+          "description": "ca.streaming.finalize counter broken down by outcome (finalized, deleted, orphaned, retry_recovered, retry_exhausted, edit_failed).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 28
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "finalized" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "orphaned" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "retry_exhausted" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "retry_recovered" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "edit_failed" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "super-light-red" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "deleted" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "text" } }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": ["sum"]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum by (outcome) (increase(ca_streaming_finalize_total[1h]))",
+              "legendFormat": "{{outcome}}"
+            }
+          ]
+        },
+        {
+          "id": 906,
+          "title": "Streaming finalize by transport / hour",
+          "type": "timeseries",
+          "description": "ca.streaming.finalize broken down by transport (slack, whatsapp) and outcome.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 28
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": ["sum"]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum by (transport, outcome) (increase(ca_streaming_finalize_total[1h]))",
+              "legendFormat": "{{transport}} / {{outcome}}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

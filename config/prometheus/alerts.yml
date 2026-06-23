@@ -138,6 +138,24 @@ groups:
           summary: "Container {{ $labels.name }} is restart-looping"
           description: "Container {{ $labels.name }} restarted {{ $value }} times in the last 15 minutes"
 
+  - name: ca_streaming
+    interval: 1m
+    rules:
+      # Orphaned streaming cursor — THE BUG (ca #1657, fixed by #1659).
+      # A stranded cursor (▌) left visible after a streaming finalize. In steady
+      # state this counter never increases; any increase means the orphan-cursor
+      # regression is back. ca.streaming.finalize{outcome="orphaned"} →
+      # ca_streaming_finalize_total (OTLP dot→underscore + _total monotonic suffix,
+      # same as ca.messages → ca_messages_total).
+      - alert: OrphanedStreamingCursor
+        expr: increase(ca_streaming_finalize_total{outcome="orphaned"}[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Orphaned streaming cursor in ca ({{ $labels.transport }})"
+          description: "ca left {{ $value | humanize }} stranded streaming cursor(s) in the last 15m on {{ $labels.transport }} — the orphan-cursor bug (#1657) may have regressed despite the #1659 fix."
+
   - name: sauron_prometheus
     interval: 1m
     rules:

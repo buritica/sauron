@@ -9,16 +9,17 @@ global:
   resolve_timeout: 5m
 
 # Default route. Everything funnels to ca-webhook, so no child routes are
-# needed. Grouping is deliberately coarse to prevent flooding: all firing
-# instances of one alertname collapse into a single notification (ca renders
-# the count, e.g. "ServiceDown (5)"), and a changed group re-notifies at most
-# every group_interval. During infra churn (deploys, restarts) this turns
-# what was ~30 messages into a handful.
+# needed. Edge-triggered by design: alerts fire when an event is DETECTED and
+# resolve when it clears — no recurring re-notification while a condition holds.
+# Alertmanager has no native "notify once" flag, so repeat_interval is set
+# absurdly high to suppress re-paging; send_resolved on the receiver still
+# delivers the one RESOLVED. Grouping stays coarse to batch a burst into one
+# message (ca renders the count, e.g. "ServiceDown (5)").
 route:
   group_by: ['alertname']      # collapse all instances of an alert into one message
   group_wait: 30s              # batch related alerts before the first page
-  group_interval: 15m          # re-notify a changed group at most every 15m
-  repeat_interval: 4h          # re-page an unchanged firing group every 4h
+  group_interval: 15m          # re-notify only when the group's membership CHANGES, ≤ every 15m
+  repeat_interval: 8760h       # effectively never re-page an unchanged firing group (1y) → edge-triggered
   receiver: 'ca-webhook'
 
 # Inhibition rules - silence certain alerts when others are firing

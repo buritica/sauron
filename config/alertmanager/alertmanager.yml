@@ -17,7 +17,7 @@ global:
 route:
   group_by: ['alertname']      # collapse all instances of an alert into one message
   group_wait: 30s              # batch related alerts before the first page
-  group_interval: 5m           # re-notify a changed group at most every 5m
+  group_interval: 15m          # re-notify a changed group at most every 15m
   repeat_interval: 4h          # re-page an unchanged firing group every 4h
   receiver: 'ca-webhook'
 

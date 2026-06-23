@@ -137,7 +137,18 @@ services:
       - ./config/loki/loki.yml:/etc/loki/loki.yml:ro
       - ./data/loki:/loki
     command: -config.file=/etc/loki/loki.yml
-    <<: *common-settings
+    # NOT *common-settings: Loki 3.x single-binary needs more than the shared
+    # 384M cap. It was OOM-killed (exit 137) every ~30s — 680+ restarts — after
+    # the disk-full event left a large WAL to replay. 1G gives real headroom.
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+        reservations:
+          cpus: "0.1"
+          memory: 128M
 
   # Promtail - Log collector (scrapes Docker container logs)
   promtail:

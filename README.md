@@ -84,7 +84,7 @@ docker compose down
 ### Alerts (Alertmanager)
 - ✅ Service down, disk space, CPU/memory thresholds
 - ✅ Container restart loops, high network errors
-- 📣 Edge-triggered (fire once on detect, once on recovery) → delivered via the ca webhook to `#watch-ca`. See [Alerts](#-alerts).
+- 📣 Edge-triggered (fire once on detect, once on recovery) → delivered via a direct Slack webhook to `#alerts`, host-tagged. See [Alerts](#-alerts).
 
 ---
 
@@ -134,7 +134,7 @@ Create a `.env` file:
 GRAFANA_PASSWORD=sauron_sees_all
 ```
 
-Alert delivery is **not** a webhook env var — alerts route through the ca webhook (see [Alerts](#-alerts)). The bearer lives in the gitignored `config/alertmanager/webhook-secret`, not `.env`.
+Alert delivery is **not** a webhook env var — alerts post to a Slack incoming webhook (see [Alerts](#-alerts)). The URL lives in the gitignored `config/alertmanager/slack-webhook-url`, not `.env`.
 
 ### Adding Morgan Monitoring
 
@@ -178,12 +178,14 @@ Alerts fire **once when an event is detected** and **once when it clears** — n
 
 This matches Datadog's default (notify on state transition, renotify off). To re-enable a safety nudge for persistent criticals, add a child route with a finite `repeat_interval` for `severity: critical` only.
 
-### Delivery — via the ca webhook, not direct Slack
+### Delivery — direct Slack incoming webhook → `#alerts`
 
-All alerts route to a single `ca-webhook` receiver: `POST http://host.docker.internal:7071/webhook/alert`, bearer-authed. ca formats firing/resolved groups and posts to the Slack alert channel (`#watch-ca`). There is **no** direct Slack/Discord/PagerDuty config — ca owns the Slack delivery.
+All alerts route to a single `slack-alerts` receiver that posts **directly to a Slack incoming webhook** (channel `#alerts`) — no intermediary. This means alerts deliver even when ca (the assistant) is down or restarting; the monitoring path has no dependency on it. ca's own operational alerts (deploys, online, stuck tasks) are separate and stay in `#watch-ca`.
 
-- The bearer lives in `config/alertmanager/webhook-secret` (gitignored, mounted into the container as `credentials_file`). It must match `ALERT_WEBHOOK_SECRET` in the ca daemon env. Never commit it.
-- Reload after editing `alertmanager.yml`: `docker kill -s HUP alertmanager` (no restart needed).
+- The incoming-webhook URL lives in `config/alertmanager/slack-webhook-url` (gitignored, mounted into the container; referenced as `api_url_file`). Provisioned via the ca Slack app → Incoming Webhooks. Never commit it.
+- Messages are **host-tagged**: the title carries the `site` external label (e.g. `[halfmoon]`) and each line shows the alert's `instance`/`mountpoint`.
+- Template gotcha: alertmanager's template engine has **no `default` function** (that's sprig/Helm). Using `| default` renders the whole message empty at send time, and `amtool check-config` won't catch it (syntax-only). Use `if/else`.
+- Reload after editing `alertmanager.yml`: recreate the container (`docker compose up -d --force-recreate alertmanager`). A plain SIGHUP can miss the change if virtiofs is serving a stale snapshot of the mounted file.
 
 ### Rules (`config/prometheus/alerts.yml`)
 

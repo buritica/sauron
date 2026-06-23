@@ -122,15 +122,21 @@ groups:
   - name: sauron_container_health
     interval: 1m
     rules:
-      # Container restarts
+      # Container restart-looping. The old expr `rate(container_last_seen[5m])`
+      # was broken: container_last_seen is a wall-clock "last scraped" timestamp
+      # that ticks up ~1/s for every RUNNING container, so its rate is ~1 for
+      # everything healthy — it fired for all containers permanently and never
+      # measured restarts. container_start_time_seconds changes only on an actual
+      # (re)start; >2 changes in 15m = genuine crash loop (a single expected
+      # restart, e.g. a deploy, is 1 change and stays silent).
       - alert: ContainerRestarting
-        expr: rate(container_last_seen[5m]) > 0
+        expr: changes(container_start_time_seconds{name!=""}[15m]) > 2
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Container {{ $labels.name }} is restarting"
-          description: "Container {{ $labels.name }} has restarted multiple times in the last 5 minutes"
+          summary: "Container {{ $labels.name }} is restart-looping"
+          description: "Container {{ $labels.name }} restarted {{ $value }} times in the last 15 minutes"
 
   - name: sauron_prometheus
     interval: 1m

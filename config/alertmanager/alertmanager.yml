@@ -48,8 +48,11 @@ receivers:
       - api_url_file: /etc/alertmanager/slack-webhook-url
         channel: '#alerts'
         send_resolved: true
-        title: '{{ if eq .Status "firing" }}🔴 FIRING{{ else }}✅ RESOLVED{{ end }}: {{ .CommonLabels.alertname }} [{{ .CommonLabels.site | default "—" }}]'
+        # NOTE: alertmanager's template engine has NO `default` function (that's
+        # sprig/Helm) — using it renders the whole message EMPTY at send time
+        # (amtool only checks syntax, not undefined funcs). Use if/else instead.
+        title: '{{ if eq .Status "firing" }}:red_circle: FIRING{{ else }}:white_check_mark: RESOLVED{{ end }}: {{ .CommonLabels.alertname }}{{ if .CommonLabels.site }} [{{ .CommonLabels.site }}]{{ end }}'
         text: >-
           {{ range .Alerts -}}
-          • *{{ .Labels.instance | default .Labels.name | default "—" }}*{{ if .Labels.mountpoint }} ({{ .Labels.mountpoint }}){{ end }} — {{ .Annotations.description }}
+          • *{{ if .Labels.instance }}{{ .Labels.instance }}{{ else }}{{ .Labels.name }}{{ end }}*{{ if .Labels.mountpoint }} ({{ .Labels.mountpoint }}){{ end }} — {{ .Annotations.description }}
           {{ end }}

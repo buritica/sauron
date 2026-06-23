@@ -85,6 +85,7 @@ services:
     volumes:
       - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - ./config/alertmanager/webhook-secret:/etc/alertmanager/webhook-secret:ro
+      - ./config/alertmanager/slack-webhook-url:/etc/alertmanager/slack-webhook-url:ro
       - ./data/alertmanager:/alertmanager
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'

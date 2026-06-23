@@ -20,7 +20,7 @@ route:
   group_wait: 30s              # batch related alerts before the first page
   group_interval: 15m          # re-notify only when the group's membership CHANGES, ≤ every 15m
   repeat_interval: 8760h       # effectively never re-page an unchanged firing group (1y) → edge-triggered
-  receiver: 'ca-webhook'
+  receiver: 'slack-alerts'
 
 # Inhibition rules - silence certain alerts when others are firing
 inhibit_rules:
@@ -38,13 +38,18 @@ inhibit_rules:
       alertname: 'PrometheusTargetsDown'
     equal: []
 
-# Receivers configuration — all funnel to ca, which fans out to Slack.
+# Receivers — direct to Slack (#alerts), no ca hop, so alerts still deliver
+# when ca is down/restarting. The incoming-webhook URL lives in a mounted,
+# gitignored file (config/alertmanager/slack-webhook-url). Messages are
+# host-tagged: title carries the site label (halfmoon), each line the instance.
 receivers:
-  - name: 'ca-webhook'
-    webhook_configs:
-      - url: 'http://host.docker.internal:7071/webhook/alert'
+  - name: 'slack-alerts'
+    slack_configs:
+      - api_url_file: /etc/alertmanager/slack-webhook-url
+        channel: '#alerts'
         send_resolved: true
-        http_config:
-          authorization:
-            type: Bearer
-            credentials_file: /etc/alertmanager/webhook-secret
+        title: '{{ if eq .Status "firing" }}🔴 FIRING{{ else }}✅ RESOLVED{{ end }}: {{ .CommonLabels.alertname }} [{{ .CommonLabels.site | default "—" }}]'
+        text: >-
+          {{ range .Alerts -}}
+          • *{{ .Labels.instance | default .Labels.name | default "—" }}*{{ if .Labels.mountpoint }} ({{ .Labels.mountpoint }}){{ end }} — {{ .Annotations.description }}
+          {{ end }}

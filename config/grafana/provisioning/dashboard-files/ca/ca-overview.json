@@ -2811,7 +2811,7 @@
       "id": 900,
       "type": "row",
       "title": "Streaming finalize",
-      "description": "Tracks ca.streaming.finalize — verifies the orphan-cursor fix (ca PR #1659 / issue #1657). outcome=orphaned is a stranded ▌ cursor (the bug; alerted via OrphanedStreamingCursor).",
+      "description": "Tracks ca.streaming.finalize — verifies the orphan-cursor fix (ca PR #1659 / issue #1657). outcome=orphaned is a stranded ▌ cursor (the bug; alerted via OrphanedStreamingCursor). outcome=shutdown_orphaned is a DISTINCT deploy-restart strand (ca #1604/#1667, inherent within the 3s finalize budget; alerted only above baseline via OrphanedStreamingCursorOnRestart).",
       "collapsed": true,
       "gridPos": {
         "h": 1,
@@ -2987,15 +2987,58 @@
           ]
         },
         {
+          "id": 907,
+          "title": "Shutdown-stranded cursors (24h)",
+          "type": "stat",
+          "description": "DISTINCT from the steady-state 'orphaned' bug (ca #1657/#1659): placeholders left stranded when the deploy-restart finalize sweep times out (ca #1604/#1667). Deploy-restart strands are inherent (ca auto-deploys, kills mid-stream within a bounded 3s budget) — a spike here is NOT the orphan-cursor regression. Alerted only above baseline via OrphanedStreamingCursorOnRestart (> 3/h).",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 28
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "noValue": "0",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "blue"
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": { "calcs": ["lastNotNull"] }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum(increase(ca_streaming_finalize_total{outcome=\"shutdown_orphaned\"}[24h]))"
+            }
+          ]
+        },
+        {
           "id": 905,
           "title": "Streaming finalize outcomes / hour",
           "type": "timeseries",
-          "description": "ca.streaming.finalize counter broken down by outcome (finalized, deleted, orphaned, retry_recovered, retry_exhausted, edit_failed).",
+          "description": "ca.streaming.finalize counter broken down by outcome (finalized, deleted, orphaned, shutdown_orphaned, retry_recovered, retry_exhausted, edit_failed).",
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 32
           },
           "datasource": {
             "type": "prometheus",
@@ -3025,6 +3068,12 @@
                 "matcher": { "id": "byName", "options": "orphaned" },
                 "properties": [
                   { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "shutdown_orphaned" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }
                 ]
               },
               {
@@ -3084,7 +3133,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 32
           },
           "datasource": {
             "type": "prometheus",

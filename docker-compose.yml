@@ -122,23 +122,28 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    # Merged fixes:
+    # - --containerd (OrbStack): docker factory needs a containerd client to
+    #   register; OrbStack's docker containerd socket lives at
+    #   /run/docker/containerd/containerd.sock in the VM, reached via /rootfs.
+    # - --disable_metrics=disk,diskIO,…: cadvisor was choking on per-container
+    #   filesystem du/inode scans (minutes-long on a busy overlayfs after the
+    #   disk-full incident), hanging :8080 → ServiceDown/ContainerDown flapping.
+    #   Host disk still comes from node-exporter (which is what the disk alerts
+    #   use), so disabling here is safe. Kernel/host-only classes (advtcp,
+    #   hugetlb, memory_numa, percpu, referenced_memory, resctrl, sched, tcp,
+    #   udp) never populate under Docker anyway.
+    # - --docker_only: skip non-docker cgroups (the OrbStack VM's /.lxc etc.).
+    # - --housekeeping_interval 30s: sample far less aggressively than the 1s
+    #   default; matches Prometheus's ~30s scrape cadence.
     command:
-      - --containerd=/rootfs/run/docker/containerd/containerd.sock
-      - --disable_metrics=tcp,udp,percpu,sched,process,hugetlb,referenced_memory,cpu_topology,resctrl,advtcp,memory_numa
-    privileged: true
-    devices:
-      - /dev/kmsg
-    command:
-      # cadvisor was choking on per-container filesystem du/inode scans (single
-      # scans taking minutes on a busy overlayfs after the disk-full event),
-      # hanging its :8080 endpoint → ServiceDown/ContainerDown flapping.
-      # - disable the expensive disk metrics (the fsHandler du scans). Host disk
-      #   usage still comes from node-exporter, which is what the disk alerts use.
-      # - docker_only: skip non-docker cgroups.
-      # - housekeeping_interval 30s: sample far less aggressively than the 1s default.
+      - '--containerd=/rootfs/run/docker/containerd/containerd.sock'
       - '--disable_metrics=disk,diskIO,advtcp,hugetlb,memory_numa,percpu,referenced_memory,resctrl,sched,tcp,udp'
       - '--docker_only=true'
       - '--housekeeping_interval=30s'
+    privileged: true
+    devices:
+      - /dev/kmsg
     <<: *common-settings
 
   # Loki - Log aggregation backend

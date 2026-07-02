@@ -91,9 +91,23 @@ services:
     <<: *light-settings
 
   # cAdvisor - Container metrics exporter
+  # OrbStack notes:
+  #   1. Host bind mounts (/, /sys, /var/lib/docker, /dev/disk) transparently
+  #      resolve to the OrbStack Linux VM's paths — NOT macOS — so they still
+  #      give cAdvisor the cgroupfs + docker layout it needs.
+  #   2. OrbStack runs docker on top of a containerd snapshotter (`docker info`
+  #      → Storage Driver: overlayfs, driver-type:
+  #      io.containerd.snapshotter.v1). cAdvisor's docker factory hard-requires
+  #      a containerd client for registration, so we point --containerd at
+  #      OrbStack's docker containerd socket via /rootfs. Docker Compose
+  #      won't bind /run/docker/containerd/ directly — it treats the source as
+  #      a macOS path, finds nothing, and mounts an empty dir.
+  #   3. Image pinned to v0.55.1 — earlier releases fail container creation on
+  #      OrbStack because they look for docker's overlay2 layerdb, which the
+  #      containerd snapshotter doesn't produce. v0.55.x tolerates its absence.
   cadvisor:
     container_name: cadvisor
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
     networks:
       - sauron
     ports:
@@ -106,6 +120,9 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    command:
+      - --containerd=/rootfs/run/docker/containerd/containerd.sock
+      - --disable_metrics=tcp,udp,percpu,sched,process,hugetlb,referenced_memory,cpu_topology,resctrl,advtcp,memory_numa
     privileged: true
     devices:
       - /dev/kmsg

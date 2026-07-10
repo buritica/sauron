@@ -171,6 +171,45 @@ groups:
           summary: "Elevated deploy-restart stranded streaming cursors in ca"
           description: "ca stranded {{ $value | humanize }} streaming cursor(s) via the shutdown finalize sweep in the last 1h — above the inherent deploy-restart baseline. Check whether deploys are landing mid-stream abnormally often, or whether the 3s finalize budget (#1604) is too tight. Distinct from the steady-state orphan-cursor bug (#1657)."
 
+  - name: ca_brain_audit
+    interval: 1m
+    rules:
+      # Mutation receipts default ON (ca #1795) — the shared audit-DB handle
+      # (setAuditDb, registered once at daemon boot) is what every brain
+      # writer resolves against. In steady state this counter never
+      # increases; any increase means the handle registration was silently
+      # dropped (a main.ts refactor regressing #1772/#1795) or a writer
+      # bypassed the default-on contract. ca.brain.audit.skipped{kind} →
+      # ca_brain_audit_skipped_total (OTLP dot→underscore + _total monotonic
+      # suffix, same as ca.streaming.finalize → ca_streaming_finalize_total).
+      # This is the CONTINUOUS backstop — ca's own post-deploy
+      # brain-audit-freshness probe (ca #1794) is the one-shot gate at
+      # deploy time; this catches drift between deploys.
+      - alert: BrainAuditReceiptsSkipped
+        expr: increase(ca_brain_audit_skipped_total[1h]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Brain mutation receipts are being skipped in ca ({{ $labels.kind }})"
+          description: "ca skipped {{ $value | humanize }} brain_audit receipt(s) for writer kind '{{ $labels.kind }}' in the last 1h — the audit trail may have gone silently unlogged. Check whether setAuditDb's shared handle registration (main.ts, right after migrations) is still intact."
+
+      # Sustained audit-write failures (INSERT throws inside logBrainAudit's
+      # own self-catch — audit failure must never roll back a real brain
+      # mutation, so this is invisible to the writer). A single occurrence
+      # is tolerated (transient SQLITE_BUSY, a momentary lock — same reason
+      # ca's own post-deploy probe treats one as non-critical); only a
+      # sustained pattern over an hour indicates a real problem with the
+      # audit DB itself (disk, corruption, schema drift).
+      - alert: BrainAuditWriteFailuresElevated
+        expr: increase(ca_brain_audit_write_failed_total[1h]) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated brain_audit write failures in ca"
+          description: "ca failed {{ $value | humanize }} brain_audit INSERT(s) in the last 1h — above a single transient blip. Check disk space and the ca.db audit table."
+
   - name: sauron_prometheus
     interval: 1m
     rules:

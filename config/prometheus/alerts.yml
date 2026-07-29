@@ -210,6 +210,31 @@ groups:
           summary: "Elevated brain_audit write failures in ca"
           description: "ca failed {{ $value | humanize }} brain_audit INSERT(s) in the last 1h — above a single transient blip. Check disk space and the ca.db audit table."
 
+  - name: ca_sdk_spurious_deny
+    interval: 1m
+    rules:
+      # Verdict alert for the claude-agent-sdk 0.3.195 pin (ca #1915, #1914).
+      # ca.query.spurious_deny_retried{outcome} counts tool calls spuriously
+      # auto-denied by the upstream SDK permission-broker bug
+      # (anthropics/claude-code#54393) despite bypassPermissions. The pin to
+      # 0.3.195 is believed to stop these; the counter is primed with zeros
+      # at daemon boot (channel_id="_startup") precisely so this series
+      # EXISTS at zero and an increase is meaningful. ANY increase post-pin
+      # means the version-correlation premise was wrong — the string-match
+      # retry workaround (ca #1884) is papering over live denials and the
+      # pin decision needs revisiting (see CLAUDE.md §Quirks + ca #1913).
+      # outcome ∈ retried|nudge_failed|gave_up|dropped_subagent|suppressed_abort;
+      # dropped_subagent is the worst signal (those denials are never
+      # retried — the sub-agent silently believes the boss refused).
+      - alert: CaSpuriousDenyActive
+        expr: sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel_id!="_startup"}[30m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spurious SDK permission denies firing in ca (outcome={{ $labels.outcome }})"
+          description: "{{ $value | humanize }} spurious SDK deny event(s) with outcome '{{ $labels.outcome }}' in the last 30m — the 0.3.195 pin did NOT stop the upstream permission-broker bug (or it regressed). See ca PR #1915 / issues #1913, #1914 and the post-mortem braindoc initiatives/code/ca/ca-sdk-spurious-deny-pin-2026-07.md."
+
   - name: sauron_prometheus
     interval: 1m
     rules:

@@ -1350,9 +1350,18 @@
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "yellow", "value": 0.5 },
-                  { "color": "red", "value": 2 }
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.5
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
                 ]
               }
             }
@@ -1360,12 +1369,19 @@
           "options": {
             "colorMode": "value",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["sum"] }
+            "reduceOptions": {
+              "calcs": [
+                "sum"
+              ]
+            }
           },
           "targets": [
             {
               "refId": "A",
-              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
               "expr": "sum(increase(ca_gemini_cost_usd_total[1h]))"
             }
           ]
@@ -1395,18 +1411,28 @@
           "options": {
             "colorMode": "none",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["sum"] }
+            "reduceOptions": {
+              "calcs": [
+                "sum"
+              ]
+            }
           },
           "targets": [
             {
               "refId": "A",
-              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
               "expr": "sum(increase(ca_gemini_tokens_input_total[1h]))",
               "legendFormat": "input"
             },
             {
               "refId": "B",
-              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
               "expr": "sum(increase(ca_gemini_tokens_output_total[1h]))",
               "legendFormat": "output"
             }
@@ -1430,11 +1456,15 @@
             "defaults": {
               "unit": "currencyUSD",
               "min": 0,
-              "color": { "mode": "palette-classic" },
+              "color": {
+                "mode": "palette-classic"
+              },
               "custom": {
                 "fillOpacity": 30,
                 "lineWidth": 1,
-                "stacking": { "mode": "normal" }
+                "stacking": {
+                  "mode": "normal"
+                }
               }
             }
           },
@@ -1442,14 +1472,21 @@
             "legend": {
               "displayMode": "table",
               "placement": "bottom",
-              "calcs": ["sum"]
+              "calcs": [
+                "sum"
+              ]
             },
-            "tooltip": { "mode": "multi" }
+            "tooltip": {
+              "mode": "multi"
+            }
           },
           "targets": [
             {
               "refId": "A",
-              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
               "expr": "sum by (caller) (increase(ca_gemini_cost_usd_total[1h]))",
               "legendFormat": "{{caller}}"
             }
@@ -2811,7 +2848,7 @@
       "id": 900,
       "type": "row",
       "title": "Streaming finalize",
-      "description": "Tracks ca.streaming.finalize — verifies the orphan-cursor fix (ca PR #1659 / issue #1657). outcome=orphaned is a stranded ▌ cursor (the bug; alerted via OrphanedStreamingCursor). outcome=shutdown_orphaned is a DISTINCT deploy-restart strand (ca #1604/#1667, inherent within the 3s finalize budget; alerted only above baseline via OrphanedStreamingCursorOnRestart).",
+      "description": "Tracks ca.streaming.finalize \u2014 verifies the orphan-cursor fix (ca PR #1659 / issue #1657). outcome=orphaned is a stranded \u258c cursor (the bug; alerted via OrphanedStreamingCursor). outcome=shutdown_orphaned is a DISTINCT deploy-restart strand (ca #1604/#1667, inherent within the 3s finalize budget; alerted only above baseline via OrphanedStreamingCursorOnRestart).",
       "collapsed": true,
       "gridPos": {
         "h": 1,
@@ -2824,7 +2861,7 @@
           "id": 901,
           "title": "Orphaned cursors (24h)",
           "type": "stat",
-          "description": "THE BUG (ca #1657/#1659): stranded streaming cursors (▌) left visible after finalize. Must be 0 in steady state — red if >0.",
+          "description": "THE BUG (ca #1657/#1659): stranded streaming cursors (\u258c) left visible after finalize. Must be 0 in steady state \u2014 red if >0.",
           "gridPos": {
             "h": 4,
             "w": 6,
@@ -2847,8 +2884,14 @@
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "red", "value": 0.5 }
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.5
+                  }
                 ]
               }
             }
@@ -2856,7 +2899,11 @@
           "options": {
             "colorMode": "value",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["lastNotNull"] }
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
           },
           "targets": [
             {
@@ -2873,7 +2920,7 @@
           "id": 902,
           "title": "Retry exhausted (24h)",
           "type": "stat",
-          "description": "Finalize edit failed all retries → fell back to delete+repost (degraded but recovered).",
+          "description": "Finalize edit failed all retries \u2192 fell back to delete+repost (degraded but recovered).",
           "gridPos": {
             "h": 4,
             "w": 6,
@@ -2895,7 +2942,11 @@
           "options": {
             "colorMode": "value",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["lastNotNull"] }
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
           },
           "targets": [
             {
@@ -2934,7 +2985,11 @@
           "options": {
             "colorMode": "value",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["lastNotNull"] }
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
           },
           "targets": [
             {
@@ -2973,7 +3028,11 @@
           "options": {
             "colorMode": "value",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["lastNotNull"] }
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
           },
           "targets": [
             {
@@ -2990,7 +3049,7 @@
           "id": 907,
           "title": "Shutdown-stranded cursors (24h)",
           "type": "stat",
-          "description": "DISTINCT from the steady-state 'orphaned' bug (ca #1657/#1659): placeholders left stranded when the deploy-restart finalize sweep times out (ca #1604/#1667). Deploy-restart strands are inherent (ca auto-deploys, kills mid-stream within a bounded 3s budget) — a spike here is NOT the orphan-cursor regression. Alerted only above baseline via OrphanedStreamingCursorOnRestart (> 3/h).",
+          "description": "DISTINCT from the steady-state 'orphaned' bug (ca #1657/#1659): placeholders left stranded when the deploy-restart finalize sweep times out (ca #1604/#1667). Deploy-restart strands are inherent (ca auto-deploys, kills mid-stream within a bounded 3s budget) \u2014 a spike here is NOT the orphan-cursor regression. Alerted only above baseline via OrphanedStreamingCursorOnRestart (> 3/h).",
           "gridPos": {
             "h": 4,
             "w": 6,
@@ -3016,7 +3075,11 @@
           "options": {
             "colorMode": "value",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["lastNotNull"] }
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
           },
           "targets": [
             {
@@ -3059,45 +3122,108 @@
             },
             "overrides": [
               {
-                "matcher": { "id": "byName", "options": "finalized" },
+                "matcher": {
+                  "id": "byName",
+                  "options": "finalized"
+                },
                 "properties": [
-                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
                 ]
               },
               {
-                "matcher": { "id": "byName", "options": "orphaned" },
+                "matcher": {
+                  "id": "byName",
+                  "options": "orphaned"
+                },
                 "properties": [
-                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
                 ]
               },
               {
-                "matcher": { "id": "byName", "options": "shutdown_orphaned" },
+                "matcher": {
+                  "id": "byName",
+                  "options": "shutdown_orphaned"
+                },
                 "properties": [
-                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
                 ]
               },
               {
-                "matcher": { "id": "byName", "options": "retry_exhausted" },
+                "matcher": {
+                  "id": "byName",
+                  "options": "retry_exhausted"
+                },
                 "properties": [
-                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "orange"
+                    }
+                  }
                 ]
               },
               {
-                "matcher": { "id": "byName", "options": "retry_recovered" },
+                "matcher": {
+                  "id": "byName",
+                  "options": "retry_recovered"
+                },
                 "properties": [
-                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "yellow"
+                    }
+                  }
                 ]
               },
               {
-                "matcher": { "id": "byName", "options": "edit_failed" },
+                "matcher": {
+                  "id": "byName",
+                  "options": "edit_failed"
+                },
                 "properties": [
-                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "super-light-red" } }
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "super-light-red"
+                    }
+                  }
                 ]
               },
               {
-                "matcher": { "id": "byName", "options": "deleted" },
+                "matcher": {
+                  "id": "byName",
+                  "options": "deleted"
+                },
                 "properties": [
-                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "text" } }
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "text"
+                    }
+                  }
                 ]
               }
             ]
@@ -3106,7 +3232,9 @@
             "legend": {
               "displayMode": "table",
               "placement": "bottom",
-              "calcs": ["sum"]
+              "calcs": [
+                "sum"
+              ]
             },
             "tooltip": {
               "mode": "multi"
@@ -3158,7 +3286,9 @@
             "legend": {
               "displayMode": "table",
               "placement": "bottom",
-              "calcs": ["sum"]
+              "calcs": [
+                "sum"
+              ]
             },
             "tooltip": {
               "mode": "multi"
@@ -3175,6 +3305,147 @@
               "legendFormat": "{{transport}} / {{outcome}}"
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": 911,
+      "type": "row",
+      "title": "SDK spurious denies (pin verdict)",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "panels": [
+        {
+          "id": 910,
+          "type": "timeseries",
+          "title": "Spurious SDK denies by outcome (pin verdict \u2014 should be flat zero)",
+          "description": "ca.query.spurious_deny_retried: tool calls spuriously auto-denied by the upstream SDK permission-broker bug (anthropics/claude-code#54393) despite bypassPermissions. Pinned to SDK 0.3.195 in ca PR #1915 \u2014 ANY activity here means the pin didn't fix it (alert CaSpuriousDenyActive fires). Series is primed with zeros at boot (channel_id=_startup excluded here) so no-data means the daemon is down, not clean. dropped_subagent = denials never retried (sub-agent believes the boss refused). Post-mortem: brain initiatives/code/ca/ca-sdk-spurious-deny-pin-2026-07.md",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "retried"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "yellow"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "dropped_subagent"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "gave_up"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "dark-red"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "nudge_failed"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "orange"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "suppressed_abort"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel_id!=\"_startup\"}[1h]))",
+              "legendFormat": "{{outcome}}",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          }
         }
       ]
     }

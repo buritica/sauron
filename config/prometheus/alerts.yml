@@ -210,6 +210,66 @@ groups:
           summary: "Elevated brain_audit write failures in ca"
           description: "ca failed {{ $value | humanize }} brain_audit INSERT(s) in the last 1h — above a single transient blip. Check disk space and the ca.db audit table."
 
+  - name: ca_brain_rollback
+    interval: 1m
+    rules:
+      # A brain doc mutation left the vault needing a HUMAN (ca #1750 + the
+      # rollback-primitive extraction). archive/unarchive/move each rename a doc
+      # and then keep writing (wikilink rewrite, frontmatter patch, log append);
+      # a throw after the rename triggers a compensator. This counter fires ONLY
+      # when that compensator itself failed — a cleanly-rolled-back forward
+      # failure is benign and deliberately counts nothing. So in steady state
+      # the series sits at zero and ANY increase is a real integrity event.
+      #
+      # ca.brain.rollback_failed{op,outcome} → ca_brain_rollback_failed_total
+      # (OTLP dot→underscore + _total monotonic suffix, same as
+      # ca.brain.audit.skipped → ca_brain_audit_skipped_total).
+      #
+      # Replaces three per-op counters (ca.brain.{archive,unarchive,move}
+      # .rollback_failed) that never had a rule — one labelled series so this
+      # stays ONE rule as ops are added. The counter is primed with zeros at
+      # daemon boot (seedRollbackMetrics, right after initTelemetry) precisely
+      # so the series EXISTS at zero: without a prior sample Prometheus cannot
+      # compute increase() over the first-ever increment, and a single isolated
+      # failure — the exact shape of this event — would never fire. Same
+      # priming rationale as CaSpuriousDenyActive above.
+      #
+      # outcome tells you what to DO, so it is grouped, not collapsed:
+      #   doc_stranded   — the doc is at the DESTINATION, not its source. Do NOT
+      #                    re-run the command; a retry hits "source not found".
+      #   links_dangling — the doc is home, inbound wikilinks still point at the
+      #                    destination path.
+      #   patch_retained — the doc is home but carries the patched frontmatter.
+      # op=move is CLI-only and never exports (CLIs don't init telemetry), so in
+      # practice this fires for op=archive (nightly lint auto-fix) and
+      # op=unarchive (lint-undo/pb-undo).
+      #
+      # severity: critical — unlike ca's other alerts, which are regression
+      # detectors, this one means data is ALREADY in an inconsistent state and
+      # no process will retry it. Nothing self-heals here.
+      - alert: CaBrainRollbackFailed
+        expr: sum by (op, outcome) (increase(ca_brain_rollback_failed_total[30m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Brain {{ $labels.op }} rollback failed in ca ({{ $labels.outcome }}) — vault needs manual reconciliation"
+          description: "ca's {{ $labels.op }} compensator failed {{ $value | humanize }} time(s) in the last 30m with outcome '{{ $labels.outcome }}' — a doc mutation threw after the rename and could not be undone. NOT self-healing; nothing will retry it. Find the doc via Loki: {app=\"ca\"} |= \"rollback\" |= \"manual reconciliation\" (the log line carries vault, sourcePath, dest, and both the original and rollback causes). doc_stranded = the doc sits at the destination path, do NOT re-run the command."
+
+      # The compensator's own bookkeeping threw (its logging or metric path),
+      # so its reported outcome may be incomplete — the vault state above is
+      # then less trustworthy than it looks. Separate from the failure counter
+      # because it says "you cannot fully believe the other signal", not "the
+      # vault is broken". Rare enough that any occurrence is worth a look.
+      - alert: CaBrainRollbackReportFailed
+        expr: sum by (op) (increase(ca_brain_rollback_report_failed_total[1h])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Brain rollback bookkeeping failed in ca ({{ $labels.op }})"
+          description: "ca's {{ $labels.op }} rollback completed but its own logging/metric path threw {{ $value | humanize }} time(s) in the last 1h — the reported rollback outcome may be incomplete. Check the ca logs around the event for a truncated rollback trace."
+
   - name: ca_sdk_spurious_deny
     interval: 1m
     rules:

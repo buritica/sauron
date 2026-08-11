@@ -637,6 +637,166 @@
           ]
         }
       ]
+    },
+    {
+      "id": 500,
+      "type": "row",
+      "title": "Mutation Rollbacks",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
+    },
+    {
+      "id": 31,
+      "title": "Rollback Failures by Op & Outcome",
+      "type": "timeseries",
+      "description": "doc_stranded = the doc sits at the DESTINATION path (do NOT re-run the command; a retry hits 'source not found'). links_dangling = the doc is home but inbound wikilinks still point at the destination. patch_retained = the doc is home but carries the patched frontmatter. op=move is CLI-only and never exports.",
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 0,
+        "y": 29
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sum by (op, outcome) (increase(ca_brain_rollback_failed_total[1h]))",
+          "legendFormat": "{{op}} / {{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "title": "Rollback Failures (24h)",
+      "type": "stat",
+      "description": "Brain doc mutations whose rollback ALSO failed, leaving the vault needing manual reconciliation. Steady state is 0 \u2014 the series is primed at zero on daemon boot, so a blank panel means ca is not exporting, not that it is healthy. Any non-zero value is a real integrity event that nothing will retry.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 29
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sum(increase(ca_brain_rollback_failed_total[24h]))",
+          "legendFormat": "failures"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "title": "Rollback Bookkeeping Failures (24h)",
+      "type": "stat",
+      "description": "The compensator's own logging/metric path threw, so the outcome reported above may be incomplete. Says 'trust the other panel less', not 'the vault is broken'.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 33
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sum(increase(ca_brain_rollback_report_failed_total[24h]))",
+          "legendFormat": "bookkeeping failures"
+        }
+      ]
     }
   ]
 }

@@ -189,8 +189,10 @@ All alerts route to a single `slack-alerts` receiver that posts **directly to a 
 
 ### Rules (`config/prometheus/alerts.yml`)
 
-**Critical:** Service down (2m), disk < 5%, Prometheus config-reload failed.
+**Critical:** Service down (2m), disk < 5%, Prometheus config-reload failed, ca brain-mutation rollback failed (24h).
 **Warning:** disk < 15%, memory > 90%, CPU > 80% (10m), high network errors, container restart-looping.
+
+`CaBrainRollbackFailed` is the one critical that reports a **persistent** state rather than a live fault — a ca brain doc mutation left the vault needing manual reconciliation, and nothing retries it. Hence its 24h window: the shorter windows used by the regression-detector alerts would post a green RESOLVED while the vault is still broken.
 
 Notes baked into the rules from real incidents:
 - **Disk** rules evaluate every **10m** (`sauron_disk` group `interval`), not the 15s global — disk fills slowly; faster eval just adds flapping. Real host disk comes from the **native halfmoon node_exporter** (`halfmoon-host` target, `host.docker.internal:9100`); the containerized node-exporter only sees the Colima VM disk.

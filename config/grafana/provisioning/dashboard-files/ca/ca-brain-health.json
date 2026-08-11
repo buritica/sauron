@@ -652,10 +652,10 @@
       "panels": []
     },
     {
-      "id": 31,
+      "id": 40,
       "title": "Rollback Failures by Op & Outcome",
       "type": "timeseries",
-      "description": "doc_stranded = the doc sits at the DESTINATION path (do NOT re-run the command; a retry hits 'source not found'). links_dangling = the doc is home but inbound wikilinks still point at the destination. patch_retained = the doc is home but carries the patched frontmatter. op=move is CLI-only and never exports.",
+      "description": "doc_stranded = the doc sits at the DESTINATION path (do NOT re-run the command; a retry hits 'source not found'). links_dangling = the doc is home but inbound wikilinks still point at the destination. patch_retained = the doc is home but carries the patched frontmatter. op=move is CLI-only and never exports. Alerted by CaBrainRollbackFailed.",
       "gridPos": {
         "h": 8,
         "w": 18,
@@ -685,7 +685,7 @@
           "displayMode": "table",
           "placement": "bottom",
           "calcs": [
-            "sum"
+            "max"
           ]
         },
         "tooltip": {
@@ -705,10 +705,10 @@
       ]
     },
     {
-      "id": 30,
+      "id": 41,
       "title": "Rollback Failures (24h)",
       "type": "stat",
-      "description": "Brain doc mutations whose rollback ALSO failed, leaving the vault needing manual reconciliation. Steady state is 0 \u2014 the series is primed at zero on daemon boot, so a blank panel means ca is not exporting, not that it is healthy. Any non-zero value is a real integrity event that nothing will retry.",
+      "description": "Brain doc mutations whose rollback ALSO failed, leaving the vault needing manual reconciliation. Steady state is 0 \u2014 the series is primed at zero on daemon boot, so a blank panel means ca is not exporting, not that it is healthy. Any non-zero value is a real integrity event that nothing will retry. Alerted by CaBrainRollbackFailed.",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -746,16 +746,26 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(increase(ca_brain_rollback_failed_total[24h]))",
-          "legendFormat": "failures"
+          "expr": "sum(increase(ca_brain_rollback_failed_total[24h]))"
         }
-      ]
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
     },
     {
-      "id": 32,
+      "id": 42,
       "title": "Rollback Bookkeeping Failures (24h)",
       "type": "stat",
-      "description": "The compensator's own logging/metric path threw, so the outcome reported above may be incomplete. Says 'trust the other panel less', not 'the vault is broken'.",
+      "description": "The compensator's own logging/metric path threw, so the outcome reported above may be incomplete. Says 'trust the other panel less', not 'the vault is broken'. Deliberately has no noValue default, same as the tile above: blank means ca is not exporting, 0 means healthy. Alerted by CaBrainRollbackReportFailed.",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -793,10 +803,20 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(increase(ca_brain_rollback_report_failed_total[24h]))",
-          "legendFormat": "bookkeeping failures"
+          "expr": "sum(increase(ca_brain_rollback_report_failed_total[24h]))"
         }
-      ]
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
     }
   ]
 }

@@ -272,6 +272,73 @@ groups:
           summary: "Brain rollback bookkeeping failed in ca ({{ $labels.op }})"
           description: "ca's {{ $labels.op }} rollback completed but its own logging/metric path threw {{ $value | humanize }} time(s) in the last 24h — the reported rollback outcome may be incomplete, and some rollback_failed increments may be missing. Check the ca logs around the event for a truncated rollback trace."
 
+  - name: ca_migration
+    interval: 1m
+    rules:
+      # ca #2204. The ca_migration_* family is emitted once per boot by a
+      # process that then exits, and READ AS A LEVEL, NOT A RATE — every rule
+      # here uses max_over_time, deliberately.
+      #
+      # Why not increase(), which every other ca rule uses: telemetry.ts sets
+      # no temporality preference (OTel JS defaults to CUMULATIVE) and the
+      # resource carries service.name only — no service.instance.id — so every
+      # boot writes the SAME series. A restart re-emits the same cumulative
+      # value rather than a lower one, Prometheus never observes a counter
+      # reset, and increase() returns 0 forever. Verified against this
+      # Prometheus on 2026-08-12:
+      #   increase(ca_migration_hash_skip_total[1h])      -> 0
+      #   max_over_time(ca_migration_hash_skip_total[1h]) -> 1
+      #
+      # The sibling ca_brain_rollback rules CAN use increase() and are not
+      # broken: seedRollbackMetrics primes those series at 0 on every boot, so
+      # a post-failure restart drops 1 -> 0 and the reset IS visible. This
+      # family cannot be primed — recordMigrationMetric returns early on
+      # value === 0 — which is precisely why it needs level queries instead.
+      #
+      # 24h windows match ca_brain_rollback's rationale: a short window posts a
+      # green RESOLVED while the condition still reproduces on every boot.
+
+      # A migration run FAILED. ca #2143: main.ts calls runMigrations at module
+      # scope with no try/catch, so this kills the daemon at boot and bm2
+      # restart-loops into it — the failure that most needs a page and, until
+      # now, had none. Absent series simply never fires, which is correct here:
+      # a daemon that has never failed a migration should be silent.
+      - alert: CaMigrationFailed
+        expr: max by (db) (max_over_time(ca_migration_outcome_total{outcome="failed"}[24h])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ca migration run failed (db={{ $labels.db }})"
+          description: "A migration run against '{{ $labels.db }}' failed in the last 24h. For db=drizzle this is a BOOT failure: main.ts runs migrations at module scope with no try/catch, so ca is down and bm2 is restart-looping into the same error (ca #2143). For drizzle-analytics / drizzle-backtest the daemon survives — those migrate lazily on first use and tryGetAnalyticsDb catches the throw, degrading the dashboard to zeros. The migration name is in the log line, not this metric (tags are unbounded and would be one series each): {app=\"ca\"} | json | module=\"migrate\" — look for level 50/60."
+
+      # A SECOND migration whose journal timestamp no longer matches its
+      # recorded created_at. 1 is the known permanent baseline
+      # (0037_kronos_followup_depth, ca #2191), so this alerts on the STEP to
+      # 2 — not on non-zero, which would page on the known-benign condition
+      # every boot forever.
+      - alert: CaMigrationDriftIncreased
+        expr: max by (db) (max_over_time(ca_migration_hash_skip_total{reason="already-applied"}[24h])) > 1
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "A second migration is hash-skipping on every ca boot (db={{ $labels.db }})"
+          description: "{{ $value | humanize }} journal entries on '{{ $labels.db }}' are being skipped by content hash because their journal timestamp no longer matches the recorded created_at. Exactly 1 is EXPECTED and benign — 0037_kronos_followup_depth has a hand-typed timestamp (ca #2191). A rise means another migration acquired the same drift, which is worth understanding: each one costs /health a file read + SHA-256 per request, and it usually means a journal was hand-edited. Not urgent, not self-healing. The tags are in {app=\"ca\"} | json | module=\"migrate\"."
+
+      # An earlier journal entry carries byte-identical content to a later one —
+      # almost always a copy-pasted migration file. Deliberately stays firing
+      # while the condition exists rather than resolving on the next boot: it
+      # reproduces every boot until someone edits the journal.
+      - alert: CaMigrationDuplicateInJournal
+        expr: max by (db) (max_over_time(ca_migration_hash_skip_total{reason="duplicate-in-journal"}[24h])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Duplicate-content migration in the ca journal (db={{ $labels.db }})"
+          description: "{{ $value | humanize }} journal entr(ies) on '{{ $labels.db }}' carry content identical to an earlier entry — a copy-pasted migration file. ca handles it safely (the duplicate is skipped rather than re-run, which would throw 'table already exists' at boot), so this is a repo hygiene defect, not an outage. Fix the journal; it will keep firing every boot until you do. The tag is in {app=\"ca\"} | json | module=\"migrate\"."
+
   - name: ca_sdk_spurious_deny
     interval: 1m
     rules:

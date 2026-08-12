@@ -210,6 +210,68 @@ groups:
           summary: "Elevated brain_audit write failures in ca"
           description: "ca failed {{ $value | humanize }} brain_audit INSERT(s) in the last 1h — above a single transient blip. Check disk space and the ca.db audit table."
 
+  - name: ca_brain_rollback
+    interval: 1m
+    rules:
+      # A brain doc mutation left the vault needing a HUMAN (ca #1750 + #2121).
+      # archive/unarchive/move each rename a doc and then keep writing (wikilink
+      # rewrite, frontmatter patch, log append); a throw after the rename
+      # triggers a compensator. This counter fires ONLY when that compensator
+      # itself failed — a cleanly-rolled-back forward failure is benign and
+      # deliberately counts nothing. Steady state is zero; any increase is real.
+      #
+      # ca.brain.rollback_failed{op,outcome} → ca_brain_rollback_failed_total
+      # (OTLP dot→underscore + _total monotonic suffix, same as
+      # ca.brain.audit.skipped → ca_brain_audit_skipped_total). Replaces three
+      # per-op counters that never had a rule — one labelled series so this
+      # stays ONE rule as ops are added. `outcome` is grouped, not collapsed,
+      # because it determines the remediation; the description spells each out.
+      #
+      # Primed with zeros at daemon boot (seedRollbackMetrics, right after
+      # initTelemetry) so the series EXISTS at zero — without a prior sample
+      # Prometheus cannot compute increase() over the first-ever increment and a
+      # single isolated failure would never fire. Same rationale as
+      # CaSpuriousDenyActive (below, ca_sdk_spurious_deny group).
+      #
+      # 24h window, NOT the 30m used by the regression-detector alerts above:
+      # those detect "something started happening" and a quiet 30m genuinely IS
+      # the resolution, so their auto-RESOLVED is honest. This one reports a
+      # PERSISTENT state that nothing retries, so a short window would post a
+      # green RESOLVED half an hour later with the vault still broken. 24h keeps
+      # it firing for a day and matches the dashboard tiles.
+      #
+      # severity: critical because data is already inconsistent, vs the other ca
+      # alerts which are regression detectors. NB this is a semantic label only:
+      # there is one route and one receiver, so it does not currently escalate
+      # or route differently (see README "Alert routing").
+      #
+      # The counter is in-process with a 30s export tick, so a failure that also
+      # kills the daemon may never export. The durable record is the ca log line
+      # the description points at — treat Loki, not this counter, as the source
+      # of truth for whether an event happened.
+      - alert: CaBrainRollbackFailed
+        expr: sum by (op, outcome) (increase(ca_brain_rollback_failed_total[24h])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Brain {{ $labels.op }} rollback failed in ca ({{ $labels.outcome }})"
+          description: "ca's {{ $labels.op }} compensator failed {{ $value | humanize }} time(s) in the last 24h with outcome '{{ $labels.outcome }}' — a doc mutation threw after the rename and could not be undone. NOT self-healing; nothing will retry it. doc_stranded = the doc sits at the DESTINATION path, do NOT re-run the command (a retry hits 'source not found'). links_dangling = the doc is home but inbound wikilinks still point at the destination. patch_retained = the doc is home but carries the patched frontmatter. Find it in Loki: {app=\"ca\"} |= \"rollback\" |= \"manual reconciliation\" — that line carries vault, sourcePath, dest, and both the original and rollback causes."
+
+      # The compensator's own bookkeeping threw (its logging or metric path), so
+      # the outcome reported above may be incomplete — this says "trust the
+      # other signal less", not "the vault is broken". Also primed at zero, and
+      # on the same 24h window as its sibling so one incident's two alerts
+      # resolve together rather than 23 hours apart.
+      - alert: CaBrainRollbackReportFailed
+        expr: sum by (op) (increase(ca_brain_rollback_report_failed_total[24h])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Brain rollback bookkeeping failed in ca ({{ $labels.op }})"
+          description: "ca's {{ $labels.op }} rollback completed but its own logging/metric path threw {{ $value | humanize }} time(s) in the last 24h — the reported rollback outcome may be incomplete, and some rollback_failed increments may be missing. Check the ca logs around the event for a truncated rollback trace."
+
   - name: ca_sdk_spurious_deny
     interval: 1m
     rules:

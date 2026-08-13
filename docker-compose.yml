@@ -36,8 +36,21 @@ services:
     environment:
       - TZ=Etc/UTC
     volumes:
-      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./config/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      # The DIRECTORY, not the two files individually. A single-file bind mount
+      # is pinned to the host inode, and `git pull` replaces these files rather
+      # than editing them in place — which orphans the mount. The container then
+      # sees /etc/prometheus/alerts.yml as NOT EXISTING, a SIGHUP reload loads
+      # ZERO rules, and /-/healthy keeps returning healthy the whole time. That
+      # happened on 2026-08-12: all 20 alert rules were silently gone, including
+      # PrometheusConfigReloadFailed — the failure deletes its own detector.
+      # Only `docker restart` recovered it.
+      #
+      # Mounting the directory makes the class impossible: replacing a file
+      # INSIDE a mounted dir doesn't invalidate the mount. This is what the
+      # grafana service below already does for its provisioning tree, which is
+      # why the same `git pull` picked up a new dashboard without incident.
+      # buritica/ca#2165.
+      - ./config/prometheus:/etc/prometheus:ro
       - ./data/prometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

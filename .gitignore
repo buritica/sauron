@@ -6,9 +6,6 @@ data/
 # Environment variables with secrets
 .env
 
-# Alertmanager → ca webhook bearer token (mounted into the container)
-config/alertmanager/webhook-secret
-
 # macOS
 .DS_Store
 
@@ -19,8 +16,9 @@ config/alertmanager/webhook-secret
 *.swo
 .claude/
 
-# Slack incoming webhook URL for alertmanager (mounted into the container)
-config/alertmanager/slack-webhook-url
-
-# Grafana Cloud remote_write API key (mounted into the prometheus container)
-config/prometheus/grafana-cloud-password
+# Grafana Cloud API token (mounted into the alloy container; used for both
+# the Prometheus remote_write and Loki push basic_auth blocks in
+# config/alloy/config.alloy — one Cloud Access Policy token scoped to
+# metrics:write + logs:write covers both, or split into two files if you
+# prefer separately-scoped tokens per signal)
+config/alloy/grafana-cloud-password

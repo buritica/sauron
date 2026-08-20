@@ -1,0 +1,255 @@
+// Grafana Alloy — halfmoon's ONLY local telemetry collector, post-migration.
+//
+// What this replaces: prometheus + loki + promtail + tempo + otel-collector +
+// alertmanager (all removed from docker-compose.yml in the same change).
+// Alloy's job here is narrow and deliberate:
+//   1. Scrape the two things that can only be PULLED (node-exporter,
+//      cadvisor expose Prometheus-format /metrics, they can't push) and
+//      forward a curated subset to Grafana Cloud's Mimir.
+//   2. Replicate promtail's log pipeline (docker container logs across
+//      EVERY service on this host — not just ca — plus the deploy-apps,
+//      cron, and runner-ca file-scrape jobs) and forward to Grafana Cloud's
+//      Loki.
+//
+// ca's own telemetry (metrics/traces/logs) does NOT flow through this file —
+// ca pushes OTLP directly to Grafana Cloud's OTLP gateway (see
+// OTEL_EXPORTER_OTLP_ENDPOINT in ca's own config), independent of which
+// machine ca runs on. That's deliberate: it decouples ca's observability from
+// sauron/halfmoon entirely, which is the whole point of this migration (ca
+// may move to severo; its telemetry must not depend on halfmoon's Alloy being
+// up). Point ca directly at Cloud, don't route it back through here. The
+// docker-log job below WILL still pick up ca's container if/while it runs on
+// this host (it scrapes every container's stdout indiscriminately, same as
+// promtail did) — that's fine, it's a second copy of ca's own log lines via a
+// different label set (`container`/`service` from Docker, not ca's own
+// structured fields), not a conflict.
+//
+// DISABLED until Cloud credentials exist — the ENTIRE pipeline below is
+// commented out as one block, deliberately: Alloy validates component
+// references at config-load time, so an active component pointing at a
+// commented-out one would crash-loop the container rather than just no-op
+// like Prometheus's equivalent block did. Fill in every TODO, uncomment the
+// whole block, `docker compose restart alloy` (no separate reload endpoint
+// like Prometheus' --web.enable-lifecycle — a restart IS the reload).
+//
+// ── Metrics ──────────────────────────────────────────────────────────────
+// Same keep-list rationale as the (now-removed) prometheus.yml remote_write
+// block this supersedes: ships a hand-picked ~15-name host/container set
+// matching exactly what alerts.yml (ported to
+// config/grafana-cloud/alert-rules.yml) and the non-cost dashboard panels
+// use. The FULL node-exporter-full/cadvisor metric families are deliberately
+// NOT shipped — nothing here queries more than this list, and shipping them
+// would blow the free-tier active-series budget for zero benefit. Widen
+// deliberately, not by accident.
+//
+// prometheus.scrape "node_exporter" {
+//   targets = [{"__address__" = "node-exporter:9100", "service" = "node-exporter", "host" = "local"}]
+//   scrape_interval = "15s"
+//   forward_to      = [prometheus.relabel.keep_list.receiver]
+// }
+//
+// // Native macOS node_exporter on halfmoon — reports real APFS filesystem
+// // metrics; the containerized node-exporter above only sees the
+// // Colima/OrbStack VM disk. Same host.docker.internal reach as the old
+// // prometheus.yml scrape.
+// prometheus.scrape "halfmoon_host" {
+//   targets = [{"__address__" = "host.docker.internal:9100", "host" = "halfmoon", "service" = "node-exporter"}]
+//   scrape_interval = "15s"
+//   forward_to      = [prometheus.relabel.keep_list.receiver]
+// }
+//
+// prometheus.scrape "cadvisor" {
+//   targets = [{"__address__" = "cadvisor:8080", "service" = "cadvisor"}]
+//   scrape_interval = "15s"
+//   forward_to      = [prometheus.relabel.keep_list.receiver]
+// }
+//
+// // One shared keep-list for every scrape target above. Extend the regex
+// // deliberately (and re-check config/grafana-cloud/alert-rules.yml +
+// // ca-overview.json's panel queries) before adding a metric name here.
+// prometheus.relabel "keep_list" {
+//   forward_to = [prometheus.remote_write.cloud.receiver]
+//
+//   rule {
+//     source_labels = ["__name__"]
+//     regex         = "up|node_filesystem_avail_bytes|node_filesystem_size_bytes|node_filesystem_files_free|node_filesystem_files|node_memory_MemAvailable_bytes|node_memory_MemTotal_bytes|node_cpu_seconds_total|node_network_receive_errs_total|node_network_transmit_errs_total|container_last_seen|container_memory_usage_bytes|container_spec_memory_limit_bytes|container_cpu_usage_seconds_total|container_start_time_seconds"
+//     action        = "keep"
+//   }
+//   // Prometheus's old external_labels: {site: halfmoon} (prometheus.yml's
+//   // global block) is gone with Prometheus itself — replicate it here so
+//   // alert-rules.yml's {{ .CommonLabels.site }} template still renders
+//   // "[halfmoon]" in Slack titles for these host/container-sourced alerts.
+//   // NOTE: this does NOT cover ca's own metrics (ca pushes OTLP directly to
+//   // Cloud, bypassing this file) — its alerts won't carry a site label
+//   // unless ca's own OTel resource attributes add one.
+//   rule {
+//     source_labels = ["__name__"]
+//     regex         = ".+"
+//     target_label  = "site"
+//     replacement   = "halfmoon"
+//     action        = "replace"
+//   }
+// }
+//
+// prometheus.remote_write "cloud" {
+//   endpoint {
+//     url = "https://TODO-YOUR-PROMETHEUS-INSTANCE.grafana.net/api/prom/push"
+//     basic_auth {
+//       username      = "TODO-METRICS-INSTANCE-ID"
+//       password_file = "/etc/alloy/grafana-cloud-password"
+//     }
+//   }
+// }
+//
+// ── Logs ─────────────────────────────────────────────────────────────────
+// Same 4 jobs promtail ran, translated to Alloy's loki.source.* + loki.process
+// components. Pipeline stage names map close to 1:1 with promtail.yml's
+// pipeline_stages (stage.json ~ json, stage.template ~ template, etc.) —
+// this is a faithful port, not a redesign. UNTESTED like the rest of this
+// file: verify each job's labels actually appear in Cloud's Loki after
+// activation before trusting the mapping blind.
+//
+// discovery.docker "containers" {
+//   host = "unix:///var/run/docker.sock"
+// }
+//
+// discovery.relabel "docker_containers" {
+//   targets = discovery.docker.containers.targets
+//   rule {
+//     source_labels = ["__meta_docker_container_name"]
+//     regex         = "/(.*)"
+//     target_label  = "container"
+//   }
+//   rule {
+//     source_labels = ["__meta_docker_container_log_stream"]
+//     target_label  = "logstream"
+//   }
+// }
+//
+// loki.source.docker "containers" {
+//   host       = "unix:///var/run/docker.sock"
+//   targets    = discovery.relabel.docker_containers.output
+//   forward_to = [loki.write.cloud.receiver]
+// }
+//
+// // Convention: any pino app deployed to ~/deploy/<app>/var/logs/*.log gets
+// // auto-discovered. App identity from pino JSON (name or service field).
+// local.file_match "deploy_apps" {
+//   path_targets = [{"__path__" = "/host/deploy/*/var/logs/*.log"}]
+// }
+//
+// loki.source.file "deploy_apps" {
+//   targets    = local.file_match.deploy_apps.targets
+//   forward_to = [loki.process.deploy_apps.receiver]
+// }
+//
+// loki.process "deploy_apps" {
+//   forward_to = [loki.write.cloud.receiver]
+//
+//   stage.json {
+//     expressions = {
+//       level     = "level",
+//       msg       = "msg",
+//       name      = "name",
+//       service   = "service",
+//       module    = "module",
+//       channelId = "channelId",
+//       userId    = "userId",
+//       traceId   = "traceId",
+//       spanId    = "spanId",
+//     }
+//   }
+//   stage.template {
+//     source   = "app"
+//     template = "{{ if .service }}{{ .service }}{{ else }}{{ .name }}{{ end }}"
+//   }
+//   stage.labels {
+//     values = {
+//       app     = "",
+//       service = "app",
+//       level   = "",
+//       module  = "",
+//       userId  = "",
+//     }
+//   }
+//   stage.template {
+//     source   = "level_name"
+//     template = "{{ if eq .level \"10\" }}trace{{ else if eq .level \"20\" }}debug{{ else if eq .level \"30\" }}info{{ else if eq .level \"40\" }}warn{{ else if eq .level \"50\" }}error{{ else if eq .level \"60\" }}fatal{{ else }}unknown{{ end }}"
+//   }
+//   stage.labels {
+//     values = { level_name = "" }
+//   }
+//   stage.timestamp {
+//     source = "time"
+//     format = "UnixMs"
+//   }
+// }
+//
+// // Host-side cron jobs wrapped by halfmoon/scripts/cron-log.sh. Each line is
+// // a JSON record: {time, task, exit, duration_ms, stdout, stderr}.
+// local.file_match "cron" {
+//   path_targets = [{"__path__" = "/host/var-log/cron/*.log", "job" = "cron"}]
+// }
+//
+// loki.source.file "cron" {
+//   targets    = local.file_match.cron.targets
+//   forward_to = [loki.process.cron.receiver]
+// }
+//
+// loki.process "cron" {
+//   forward_to = [loki.write.cloud.receiver]
+//
+//   stage.json {
+//     expressions = {
+//       time        = "time",
+//       task        = "task",
+//       exit        = "exit",
+//       duration_ms = "duration_ms",
+//     }
+//   }
+//   stage.labels {
+//     values = { task = "", exit = "" }
+//   }
+//   stage.timestamp {
+//     source = "time"
+//     format = "RFC3339Nano"
+//   }
+// }
+//
+// local.file_match "runner_ca" {
+//   path_targets = [{
+//     "__path__" = "/host/runner-ca/diag/{Runner,Worker}_*.log",
+//     "job"      = "runner-ca",
+//     "service"  = "runner-ca",
+//   }]
+// }
+//
+// loki.source.file "runner_ca" {
+//   targets    = local.file_match.runner_ca.targets
+//   forward_to = [loki.process.runner_ca.receiver]
+// }
+//
+// loki.process "runner_ca" {
+//   forward_to = [loki.write.cloud.receiver]
+//
+//   stage.regex {
+//     expression = "^\\[(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}Z)\\s+(?P<level>\\w+)\\s+(?P<component>\\w+)\\]\\s*(?P<message>.*)"
+//   }
+//   stage.labels {
+//     values = { level = "", component = "" }
+//   }
+//   stage.timestamp {
+//     source = "timestamp"
+//     format = "2006-01-02 15:04:05Z"
+//   }
+// }
+//
+// loki.write "cloud" {
+//   endpoint {
+//     url = "https://TODO-YOUR-LOKI-INSTANCE.grafana.net/loki/api/v1/push"
+//     basic_auth {
+//       username      = "TODO-LOGS-INSTANCE-ID"
+//       password_file = "/etc/alloy/grafana-cloud-password"
+//     }
+//   }
+// }

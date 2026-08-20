@@ -25,43 +25,46 @@ x-light-settings: &light-settings
         memory: 32M
 
 services:
-  # Prometheus - Time-series metrics database
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus:latest
+  # Grafana Alloy — the ONLY telemetry collector left on halfmoon (replaces
+  # prometheus + loki + promtail + tempo + otel-collector + alertmanager, see
+  # the "Grafana Cloud migration" README section). Scrapes node-exporter +
+  # cadvisor for metrics, replicates promtail's docker/file log jobs, forwards
+  # both to Grafana Cloud. ca's own telemetry does NOT flow through here — it
+  # pushes OTLP directly to Cloud.
+  #
+  # DISABLED (config.alloy is fully commented out) until Cloud credentials
+  # exist — see config/alloy/config.alloy's header for activation steps.
+  # Volumes mirror exactly what promtail mounted (same log sources, same
+  # paths) plus config.alloy itself.
+  alloy:
+    container_name: alloy
+    image: grafana/alloy:latest
     networks:
       - sauron
     ports:
-      - "9090:9090"
+      - "12345:12345"   # Alloy's own UI/API — component graph, live debugging
     environment:
       - TZ=Etc/UTC
     volumes:
-      # The DIRECTORY, not the two files individually. A single-file bind mount
-      # is pinned to the host inode, and `git pull` replaces these files rather
-      # than editing them in place — which orphans the mount. The container then
-      # sees /etc/prometheus/alerts.yml as NOT EXISTING, a SIGHUP reload loads
-      # ZERO rules, and /-/healthy keeps returning healthy the whole time. That
-      # happened on 2026-08-12: all 20 alert rules were silently gone, including
-      # PrometheusConfigReloadFailed — the failure deletes its own detector.
-      # Only `docker restart` recovered it.
-      #
-      # Mounting the directory makes the class impossible: replacing a file
-      # INSIDE a mounted dir doesn't invalidate the mount. This is what the
-      # grafana service below already does for its provisioning tree, which is
-      # why the same `git pull` picked up a new dashboard without incident.
-      # buritica/ca#2165.
-      - ./config/prometheus:/etc/prometheus:ro
-      - ./data/prometheus:/prometheus
+      - ./config/alloy:/etc/alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /Users/buritica/deploy:/host/deploy:ro
+      - /Users/buritica/actions-runner-ca/_diag:/host/runner-ca/diag:ro
+      - /Users/buritica/var/log:/host/var-log:ro
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=30d'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-      - '--web.enable-remote-write-receiver'
+      - 'run'
+      - '--server.http.listen-addr=0.0.0.0:12345'
+      - '/etc/alloy/config.alloy'
     <<: *common-settings
 
   # Grafana - Visualization and dashboards
+  # Post-migration this is an OPTIONAL local mirror — Grafana Cloud has its
+  # own hosted Grafana UI with the same dashboards. Kept for now (Tailscale-
+  # only local access, works without a Cloud login); drop it if that's not
+  # worth the container. Its dashboards need their Prometheus datasource
+  # repointed at Cloud's query endpoint instead of localhost:9090 — there's
+  # no local Prometheus for it to query anymore.
   grafana:
     container_name: grafana
     image: grafana/grafana:11.5.2
@@ -84,26 +87,6 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     <<: *common-settings
-
-  # Alertmanager - Alert routing and notifications
-  alertmanager:
-    container_name: alertmanager
-    image: prom/alertmanager:latest
-    networks:
-      - sauron
-    ports:
-      - "9093:9093"
-    environment:
-      - TZ=Etc/UTC
-    volumes:
-      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - ./config/alertmanager/webhook-secret:/etc/alertmanager/webhook-secret:ro
-      - ./config/alertmanager/slack-webhook-url:/etc/alertmanager/slack-webhook-url:ro
-      - ./data/alertmanager:/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-    <<: *light-settings
 
   # cAdvisor - Container metrics exporter
   # OrbStack notes:
@@ -148,7 +131,16 @@ services:
     #   udp) never populate under Docker anyway.
     # - --docker_only: skip non-docker cgroups (the OrbStack VM's /.lxc etc.).
     # - --housekeeping_interval 30s: sample far less aggressively than the 1s
-    #   default; matches Prometheus's ~30s scrape cadence.
+    #   default; matches Alloy's ~15s scrape cadence.
+    #
+    # Kept as a STANDALONE container rather than folded into Alloy's
+    # prometheus.exporter.cadivsor (which does exist and could replace this)
+    # — deliberately, for now: this config is the product of a real incident
+    # (choking on overlayfs scans, hanging :8080, false ServiceDown cascades)
+    # and Alloy's embedded cAdvisor fork has its own separate compatibility
+    # history. Fold it in as a follow-up once the core Alloy→Cloud pipeline is
+    # proven working — not in the same change that's also standing up Cloud
+    # connectivity for the first time.
     command:
       - '--containerd=/rootfs/run/docker/containerd/containerd.sock'
       - '--disable_metrics=disk,diskIO,advtcp,hugetlb,memory_numa,percpu,referenced_memory,resctrl,sched,tcp,udp'
@@ -159,81 +151,14 @@ services:
       - /dev/kmsg
     <<: *common-settings
 
-  # Loki - Log aggregation backend
-  loki:
-    container_name: loki
-    image: grafana/loki:latest
-    networks:
-      - sauron
-    ports:
-      - "3100:3100"
-    environment:
-      - TZ=Etc/UTC
-    volumes:
-      - ./config/loki/loki.yml:/etc/loki/loki.yml:ro
-      - ./data/loki:/loki
-    command: -config.file=/etc/loki/loki.yml
-    # NOT *common-settings: Loki 3.x single-binary needs more than the shared
-    # 384M cap. It was OOM-killed (exit 137) every ~30s — 680+ restarts — after
-    # the disk-full event left a large WAL to replay. 1G gives real headroom.
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 1G
-        reservations:
-          cpus: "0.1"
-          memory: 128M
-
-  # Promtail - Log collector (scrapes Docker container logs)
-  promtail:
-    container_name: promtail
-    image: grafana/promtail:latest
-    networks:
-      - sauron
-    environment:
-      - TZ=Etc/UTC
-    volumes:
-      - ./config/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /Users/buritica/deploy:/host/deploy:ro
-      - /Users/buritica/actions-runner-ca/_diag:/host/runner-ca/diag:ro
-      - /Users/buritica/var/log:/host/var-log:ro
-    command: -config.file=/etc/promtail/promtail.yml
-    <<: *common-settings
-
-  # OpenTelemetry Collector - OTLP ingestion and fan-out
-  otel-collector:
-    container_name: otel-collector
-    image: otel/opentelemetry-collector-contrib:latest
-    networks:
-      - sauron
-    ports:
-      - "4317:4317"
-      - "4318:4318"
-    environment:
-      - TZ=Etc/UTC
-    volumes:
-      - ./config/otel-collector/otel-collector.yml:/etc/otelcol-contrib/config.yaml:ro
-    <<: *common-settings
-
-  # Tempo - Distributed tracing backend
-  tempo:
-    container_name: tempo
-    image: grafana/tempo:2.9.0
-    networks:
-      - sauron
-    environment:
-      - TZ=Etc/UTC
-    volumes:
-      - ./config/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
-      - ./data/tempo:/var/tempo
-    command: -config.file=/etc/tempo/tempo.yml
-    <<: *common-settings
-
   # Node Exporter - Host system metrics
+  # Same "kept standalone for now" reasoning as cadvisor above — Alloy's
+  # prometheus.exporter.unix could replace this, deferred to the same
+  # follow-up. Also note: this containerized instance only sees the
+  # Colima/OrbStack VM's disk, not real macOS APFS — that's what the native
+  # brew-installed node_exporter (scraped at host.docker.internal:9100 in
+  # config/alloy/config.alloy's halfmoon_host job) is for, and folding THIS
+  # container into Alloy would not remove the need for that native install.
   node-exporter:
     container_name: node-exporter
     image: prom/node-exporter:latest

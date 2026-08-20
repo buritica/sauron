@@ -1,0 +1,286 @@
+# Grafana Cloud alert rules — Mimir ruler format (same rule-group shape as
+# Prometheus's rule_files, so this is close to a straight port of the
+# now-removed config/prometheus/alerts.yml). NOT auto-loaded — Grafana Cloud's
+# ruler has no directory-mount provisioning like the old Prometheus/Grafana
+# dashboard setup did. Load via:
+#
+#   mimirtool rules load config/grafana-cloud/alert-rules.yml \
+#     --address=https://<your-stack>.grafana.net --id=<instance-id> \
+#     --key=<api-token-with-ruler-write-scope>
+#
+# (or paste each group through the Cloud Portal's Alerting → Alert rules →
+# import UI). Re-run `mimirtool rules load` after any edit here — there is no
+# git-pull-triggers-reload path the way sauron's local Prometheus had.
+#
+# Dropped from the original alerts.yml (Prometheus-self-monitoring, not
+# meaningful once Prometheus is decommissioned):
+#   - PrometheusTargetsDown (checked local Prometheus's own `up` ratio)
+#   - PrometheusConfigReloadFailed (checked prometheus_config_last_reload_successful)
+# Replaced by the two dead-man's-switch rules in `cloud_liveness` below, which
+# cover a STRICTLY WORSE case those two never could: the box (or ca) going
+# fully dark, not just a config reload failing on a box that's still up.
+#
+# Everything else is a straight port — same expr, same for/labels/annotations
+# — since the underlying metrics (ca_*, node_*, container_*) land in the same
+# Cloud Mimir regardless of whether they arrived via Alloy's remote_write or
+# ca's direct OTLP push.
+
+groups:
+  - name: sauron_critical
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes."
+
+      - alert: ContainerDown
+        expr: absent(container_last_seen{name!=""})
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container monitoring unavailable"
+          description: "cAdvisor is not reporting container metrics"
+
+  - name: sauron_disk
+    interval: 10m
+    rules:
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}) < 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space on {{ $labels.mountpoint }}"
+          description: "Disk space on {{ $labels.mountpoint }} is below 5% ({{ $value | humanizePercentage }})"
+
+      - alert: DiskSpaceWarning
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}) < 0.15
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.mountpoint }}"
+          description: "Disk space on {{ $labels.mountpoint }} is below 15% ({{ $value | humanizePercentage }})"
+
+      - alert: HighInodeUsage
+        expr: (node_filesystem_files_free / node_filesystem_files) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High inode usage on {{ $labels.mountpoint }}"
+          description: "Inode usage on {{ $labels.mountpoint }} is above 90%"
+
+  - name: sauron_memory
+    interval: 1m
+    rules:
+      - alert: ContainerHighMemory
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes{container!=""}) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} high memory usage"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit"
+
+      - alert: HostHighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory usage critical"
+          description: "Host memory usage is above 90% ({{ $value | humanizePercentage }})"
+
+  - name: sauron_cpu
+    interval: 1m
+    rules:
+      - alert: HostHighCPU
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage has been above 80% for 10 minutes ({{ $value | humanize }}%)"
+
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{container!=""}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} high CPU"
+          description: "Container {{ $labels.name }} CPU usage is high"
+
+  - name: sauron_network
+    interval: 1m
+    rules:
+      - alert: HighNetworkErrors
+        expr: rate(node_network_receive_errs_total[5m]) > 10 or rate(node_network_transmit_errs_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network errors on {{ $labels.device }}"
+          description: "Network interface {{ $labels.device }} is experiencing high error rates"
+
+  - name: sauron_container_health
+    interval: 1m
+    rules:
+      - alert: ContainerRestarting
+        expr: changes(container_start_time_seconds{name!=""}[15m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} is restart-looping"
+          description: "Container {{ $labels.name }} restarted {{ $value }} times in the last 15 minutes"
+
+  - name: ca_streaming
+    interval: 1m
+    rules:
+      - alert: OrphanedStreamingCursor
+        expr: increase(ca_streaming_finalize_total{outcome="orphaned"}[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Orphaned streaming cursor in ca ({{ $labels.transport }})"
+          description: "ca left {{ $value | humanize }} stranded streaming cursor(s) in the last 15m on {{ $labels.transport }} — the orphan-cursor bug (#1657) may have regressed despite the #1659 fix."
+
+      - alert: OrphanedStreamingCursorOnRestart
+        expr: sum(increase(ca_streaming_finalize_total{outcome="shutdown_orphaned"}[1h])) > 3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated deploy-restart stranded streaming cursors in ca"
+          description: "ca stranded {{ $value | humanize }} streaming cursor(s) via the shutdown finalize sweep in the last 1h — above the inherent deploy-restart baseline. Check whether deploys are landing mid-stream abnormally often, or whether the 3s finalize budget (#1604) is too tight. Distinct from the steady-state orphan-cursor bug (#1657)."
+
+  - name: ca_brain_audit
+    interval: 1m
+    rules:
+      - alert: BrainAuditReceiptsSkipped
+        expr: increase(ca_brain_audit_skipped_total[1h]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Brain mutation receipts are being skipped in ca ({{ $labels.kind }})"
+          description: "ca skipped {{ $value | humanize }} brain_audit receipt(s) for writer kind '{{ $labels.kind }}' in the last 1h — the audit trail may have gone silently unlogged. Check whether setAuditDb's shared handle registration (main.ts, right after migrations) is still intact."
+
+      - alert: BrainAuditWriteFailuresElevated
+        expr: increase(ca_brain_audit_write_failed_total[1h]) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated brain_audit write failures in ca"
+          description: "ca failed {{ $value | humanize }} brain_audit INSERT(s) in the last 1h — above a single transient blip. Check disk space and the ca.db audit table."
+
+  - name: ca_brain_rollback
+    interval: 1m
+    rules:
+      - alert: CaBrainRollbackFailed
+        expr: sum by (op, outcome) (increase(ca_brain_rollback_failed_total[24h])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Brain {{ $labels.op }} rollback failed in ca ({{ $labels.outcome }})"
+          description: "ca's {{ $labels.op }} compensator failed {{ $value | humanize }} time(s) in the last 24h with outcome '{{ $labels.outcome }}' — a doc mutation threw after the rename and could not be undone. NOT self-healing; nothing will retry it. doc_stranded = the doc sits at the DESTINATION path, do NOT re-run the command (a retry hits 'source not found'). links_dangling = the doc is home but inbound wikilinks still point at the destination. patch_retained = the doc is home but carries the patched frontmatter. Find it in logs: search for \"rollback\" + \"manual reconciliation\" — that line carries vault, sourcePath, dest, and both the original and rollback causes."
+
+      - alert: CaBrainRollbackReportFailed
+        expr: sum by (op) (increase(ca_brain_rollback_report_failed_total[24h])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Brain rollback bookkeeping failed in ca ({{ $labels.op }})"
+          description: "ca's {{ $labels.op }} rollback completed but its own logging/metric path threw {{ $value | humanize }} time(s) in the last 24h — the reported rollback outcome may be incomplete, and some rollback_failed increments may be missing. Check the ca logs around the event for a truncated rollback trace."
+
+  - name: ca_migration
+    interval: 1m
+    rules:
+      - alert: CaMigrationFailed
+        expr: max by (db) (max_over_time(ca_migration_outcome_total{outcome="failed"}[24h])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ca migration run failed (db={{ $labels.db }})"
+          description: "A migration run against '{{ $labels.db }}' failed in the last 24h. For db=drizzle this is a BOOT failure: main.ts runs migrations at module scope with no try/catch, so ca is down and bm2 is restart-looping into the same error (ca #2143). For drizzle-analytics / drizzle-backtest the daemon survives — those migrate lazily on first use and tryGetAnalyticsDb catches the throw, degrading the dashboard to zeros."
+
+      - alert: CaMigrationDriftIncreased
+        expr: max by (db) (max_over_time(ca_migration_hash_skip_total{reason="already-applied"}[24h])) > 1
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "A second migration is hash-skipping on every ca boot (db={{ $labels.db }})"
+          description: "{{ $value | humanize }} journal entries on '{{ $labels.db }}' are being skipped by content hash because their journal timestamp no longer matches the recorded created_at. Exactly 1 is EXPECTED and benign (0037_kronos_followup_depth, ca #2191). A rise means another migration acquired the same drift."
+
+      - alert: CaMigrationDuplicateInJournal
+        expr: max by (db) (max_over_time(ca_migration_hash_skip_total{reason="duplicate-in-journal"}[24h])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Duplicate-content migration in the ca journal (db={{ $labels.db }})"
+          description: "{{ $value | humanize }} journal entr(ies) on '{{ $labels.db }}' carry content identical to an earlier entry — a copy-pasted migration file. Fix the journal; it will keep firing every boot until you do."
+
+  - name: ca_sdk_spurious_deny
+    interval: 1m
+    rules:
+      - alert: CaSpuriousDenyActive
+        expr: sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel_id!="_startup"}[30m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spurious SDK permission denies firing in ca (outcome={{ $labels.outcome }})"
+          description: "{{ $value | humanize }} spurious SDK deny event(s) with outcome '{{ $labels.outcome }}' in the last 30m — the 0.3.195 pin did NOT stop the upstream permission-broker bug (or it regressed). See ca PR #1915 / issues #1913, #1914."
+
+  # ── New: dead-man's-switch rules ──────────────────────────────────────
+  # Evaluated by Grafana Cloud's own ruler, not anything running on halfmoon —
+  # so both of these fire even if halfmoon is completely powered off, which a
+  # LOCAL Alertmanager never could (it dies with the box it's watching). This
+  # is a strictly better failure detector than the local-Alertmanager design
+  # sauron had before this migration for exactly the "box went dark" case;
+  # see the migration README section for the reasoning.
+  - name: cloud_liveness
+    interval: 1m
+    rules:
+      # ca emits ca.heartbeat / ca_heartbeat_timestamp_seconds every 10m
+      # (HEARTBEAT_INTERVAL_MS, runtime/src/heartbeat.ts) via its DIRECT OTLP
+      # push to Cloud — independent of halfmoon/Alloy, so this still catches
+      # "ca is down" after ca moves to severo. 25m window = 2.5x the interval,
+      # tolerant of one missed tick before firing.
+      - alert: CaHeartbeatMissing
+        expr: absent_over_time(ca_heartbeat_timestamp_seconds[25m])
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ca has not reported a heartbeat in 25 minutes"
+          description: "No ca_heartbeat_timestamp_seconds sample in the last 25m — ca is down, crash-looping, or has lost its path to Grafana Cloud. This fires even if the host ca runs on is completely unreachable."
+
+      # node-exporter's `up` series (scraped locally by Alloy every 15s) stops
+      # updating if EITHER Alloy dies OR halfmoon itself goes dark — this is
+      # the halfmoon-specific analogue of CaHeartbeatMissing above. 10m window
+      # (40x the 15s scrape interval) tolerates a normal Alloy restart.
+      - alert: HalfmoonAlloyMissing
+        expr: absent_over_time(up{service="node-exporter",host="local"}[10m])
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "halfmoon has not reported node-exporter metrics in 10 minutes"
+          description: "No up{service=\"node-exporter\",host=\"local\"} sample in the last 10m — either Alloy died on halfmoon, or halfmoon itself is unreachable/down."

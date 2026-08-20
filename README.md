@@ -171,7 +171,7 @@ Sauron used to be fully self-hosted. As of 2026-08-20 it's Alloy-first: everythi
 
 **Deferred to a follow-up, once the above is proven working:** folding node-exporter and cadvisor into Alloy's own `prometheus.exporter.unix`/`prometheus.exporter.cadvisor` components (both exist, both could drop a container each) — held back because the current standalone cAdvisor config is the product of a real incident-driven tuning pass, and Alloy's embedded fork has its own separate compatibility history that hasn't been verified against this OrbStack setup.
 
-**⚠️ Everything in `config/alloy/` and `config/grafana-cloud/` is UNTESTED against a live Alloy instance or real Cloud credentials** — written by translating the removed configs faithfully, not by running them. Verify component names/arguments against Alloy's own docs before trusting this blind, and watch http://localhost:12345 closely on first activation.
+**Validated on halfmoon (2026-08-20), against real Alloy, not just written and hoped:** `alloy validate` passes on the uncommented pipeline, and a throwaway live run (fake credentials, real network) reported all 18 components healthy — node-exporter/cadvisor scrapes genuinely `up`, docker log discovery found and tailed real files, the only warning was the expected DNS failure on the fake remote_write URL. **Not yet validated:** the actual Cloud endpoint (needs a real token), `config/grafana-cloud/alert-rules.yml` / `alertmanager.yml` (need `mimirtool` against a real stack), and the exact label/field mapping showing up correctly in Cloud's Loki/Mimir once real data lands — verify those before fully trusting the migration.
 
 ---
 

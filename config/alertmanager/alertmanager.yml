@@ -1,20 +1,24 @@
 # Alertmanager Configuration - Sauron
-# Route and manage alerts. All notifications go through the ca webhook
-# (POST /webhook/alert on the host), which formats firing/resolved groups and
-# posts to the Slack alert channel. Bearer token is read from a mounted,
-# gitignored credentials file (config/alertmanager/webhook-secret) — never
-# committed. Must match ALERT_WEBHOOK_SECRET in the ca daemon env.
+# Route and manage alerts. Notifications go DIRECTLY to Slack (see the
+# `receivers` block below) — there is no ca hop. An earlier design DID route
+# through ca's `POST /webhook/alert` (real traffic 2026-06-22/23, none since);
+# that was superseded by the direct-to-Slack receiver for resilience (alerts
+# must still deliver when ca is down/restarting) and this header comment went
+# stale until the 2026-08-20 cardinality-audit pass caught it. `ALERT_WEBHOOK_SECRET`
+# and ca's alert-webhook.ts route are consequently unused in production today —
+# left in place (not removed) in case a future design wants a second delivery
+# path, but treat them as dead code until then, not as documentation of current
+# behavior.
 
 global:
   resolve_timeout: 5m
 
-# Default route. Everything funnels to ca-webhook, so no child routes are
-# needed. Edge-triggered by design: alerts fire when an event is DETECTED and
-# resolve when it clears — no recurring re-notification while a condition holds.
-# Alertmanager has no native "notify once" flag, so repeat_interval is set
-# absurdly high to suppress re-paging; send_resolved on the receiver still
-# delivers the one RESOLVED. Grouping stays coarse to batch a burst into one
-# message (ca renders the count, e.g. "ServiceDown (5)").
+# Default route. Single receiver, so no child routes are needed. Edge-triggered
+# by design: alerts fire when an event is DETECTED and resolve when it clears —
+# no recurring re-notification while a condition holds. Alertmanager has no
+# native "notify once" flag, so repeat_interval is set absurdly high to
+# suppress re-paging; send_resolved on the receiver still delivers the one
+# RESOLVED. Grouping stays coarse to batch a burst into one message.
 route:
   group_by: ['alertname']      # collapse all instances of an alert into one message
   group_wait: 30s              # batch related alerts before the first page

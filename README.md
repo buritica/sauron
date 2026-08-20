@@ -205,6 +205,23 @@ Notes baked into the rules from real incidents:
 
 ---
 
+## ☁️ Grafana Cloud (metrics only)
+
+Sauron is fully self-hosted today — nothing leaves halfmoon. `config/prometheus/prometheus.yml` has a `remote_write` block, commented out, ready to activate once a Grafana Cloud account exists.
+
+**Why metrics only, not logs/traces:** the free tier's 10k active-series budget is the binding constraint (see the cardinality audit in `buritica/ca#2328` and its companion `#25` on this repo). Logs/traces stay local — Loki/Tempo already give fast local search, and the free tier's 50GB log/trace allotment matters less than the series-count wall does for metrics.
+
+**Why it ships `ca_.*` wholesale but only a hand-picked host/container set:** ca's own metrics are already cardinality-trimmed (the audit above), so shipping all of them is cheap and future-proof — no README edit needed when ca adds a new counter. Host/container metrics are the opposite: `node-exporter-full`/cadvisor's FULL collector output is hundreds to thousands of series on its own, and nothing here queries more than the ~15 names the alert rules + non-cost dashboard panels actually use. Those full dashboards (imported via IDs 893/1860/14282, see below) stay **local-only** — view them at `:3030`, don't expect them to render in Cloud.
+
+**To activate:**
+1. Create a Grafana Cloud stack, get its Prometheus remote_write URL + instance ID + an API key (Cloud Portal → your stack → Prometheus → "Send Metrics").
+2. `echo -n 'YOUR_API_KEY' > config/prometheus/grafana-cloud-password` (gitignored, never commit).
+3. Uncomment the `remote_write:` block in `config/prometheus/prometheus.yml`, fill in the URL and instance ID.
+4. Reload without a restart: `curl -X POST http://localhost:9090/-/reload` (the container runs with `--web.enable-lifecycle`).
+5. Confirm in the Cloud Portal's "Cardinality Management" view that active series stay under budget — the keep regex is a starting point, not a guarantee against a future metric explosion.
+
+---
+
 ## 📈 Grafana Dashboards
 
 ### Pre-built Dashboards to Import

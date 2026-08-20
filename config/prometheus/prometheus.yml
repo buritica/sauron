@@ -20,6 +20,32 @@ alerting:
 rule_files:
   - 'alerts.yml'
 
+# Grafana Cloud remote_write — DISABLED until the Cloud stack exists (no
+# instance ID / API key yet). Fill in the two TODOs below and uncomment to
+# activate; Prometheus reloads this file live via --web.enable-lifecycle, no
+# restart needed. Ships ONLY the metrics actually consumed (alert rules in
+# alerts.yml + the non-cost panels in ca-overview.json/ca-cadence.json/
+# ca-brain-health.json) to stay inside the free tier's 10k active-series
+# budget — see the cardinality audit that also removed ca's own OTel
+# cost/token duplicates (buritica/ca#2328) before this was written.
+#
+# Deliberately keeps the FULL node-exporter-full/cadvisor/halfmoon/morgan
+# dashboards LOCAL-ONLY (view at :3030) rather than shipping their full
+# metric families to Cloud — those dashboards need dozens of node_exporter
+# collectors' worth of series that nothing here queries beyond the bounded
+# host/container set below. Widen the keep regex deliberately, not by
+# accident, if a Cloud-side dashboard needs more.
+#
+# remote_write:
+#   - url: https://TODO-YOUR-PROMETHEUS-INSTANCE.grafana.net/api/prom/push
+#     basic_auth:
+#       username: "TODO-INSTANCE-ID"
+#       password_file: /etc/prometheus/grafana-cloud-password
+#     write_relabel_configs:
+#       - source_labels: [__name__]
+#         regex: 'ca_.*|up|node_filesystem_avail_bytes|node_filesystem_size_bytes|node_filesystem_files_free|node_filesystem_files|node_memory_MemAvailable_bytes|node_memory_MemTotal_bytes|node_cpu_seconds_total|node_network_receive_errs_total|node_network_transmit_errs_total|container_last_seen|container_memory_usage_bytes|container_spec_memory_limit_bytes|container_cpu_usage_seconds_total|container_start_time_seconds|prometheus_config_last_reload_successful'
+#         action: keep
+
 # Scrape configurations
 scrape_configs:
   # Prometheus self-monitoring

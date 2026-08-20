@@ -21,3 +21,6 @@ config/alertmanager/webhook-secret
 
 # Slack incoming webhook URL for alertmanager (mounted into the container)
 config/alertmanager/slack-webhook-url
+
+# Grafana Cloud remote_write API key (mounted into the prometheus container)
+config/prometheus/grafana-cloud-password

@@ -32,15 +32,15 @@
 // whole block, `docker compose restart alloy` (no separate reload endpoint
 // like Prometheus' --web.enable-lifecycle — a restart IS the reload).
 //
-// ── Metrics ──────────────────────────────────────────────────────────────
-// Same keep-list rationale as the (now-removed) prometheus.yml remote_write
-// block this supersedes: ships a hand-picked ~15-name host/container set
-// matching exactly what alerts.yml (ported to
-// config/grafana-cloud/alert-rules.yml) and the non-cost dashboard panels
-// use. The FULL node-exporter-full/cadvisor metric families are deliberately
-// NOT shipped — nothing here queries more than this list, and shipping them
-// would blow the free-tier active-series budget for zero benefit. Widen
-// deliberately, not by accident.
+// // ── Metrics ──────────────────────────────────────────────────────────────
+// // Same keep-list rationale as the (now-removed) prometheus.yml remote_write
+// // block this supersedes: ships a hand-picked ~15-name host/container set
+// // matching exactly what alerts.yml (ported to
+// // config/grafana-cloud/alert-rules.yml) and the non-cost dashboard panels
+// // use. The FULL node-exporter-full/cadvisor metric families are deliberately
+// // NOT shipped — nothing here queries more than this list, and shipping them
+// // would blow the free-tier active-series budget for zero benefit. Widen
+// // deliberately, not by accident.
 //
 // prometheus.scrape "node_exporter" {
 //   targets = [{"__address__" = "node-exporter:9100", "service" = "node-exporter", "host" = "local"}]
@@ -101,13 +101,13 @@
 //   }
 // }
 //
-// ── Logs ─────────────────────────────────────────────────────────────────
-// Same 4 jobs promtail ran, translated to Alloy's loki.source.* + loki.process
-// components. Pipeline stage names map close to 1:1 with promtail.yml's
-// pipeline_stages (stage.json ~ json, stage.template ~ template, etc.) —
-// this is a faithful port, not a redesign. UNTESTED like the rest of this
-// file: verify each job's labels actually appear in Cloud's Loki after
-// activation before trusting the mapping blind.
+// // ── Logs ─────────────────────────────────────────────────────────────────
+// // Same 4 jobs promtail ran, translated to Alloy's loki.source.* + loki.process
+// // components. Pipeline stage names map close to 1:1 with promtail.yml's
+// // pipeline_stages (stage.json ~ json, stage.template ~ template, etc.) —
+// // this is a faithful port, not a redesign. UNTESTED like the rest of this
+// // file: verify each job's labels actually appear in Cloud's Loki after
+// // activation before trusting the mapping blind.
 //
 // discovery.docker "containers" {
 //   host = "unix:///var/run/docker.sock"

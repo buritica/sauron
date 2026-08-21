@@ -239,8 +239,9 @@ groups:
   - name: ca_sdk_spurious_deny
     interval: 1m
     rules:
+      # Label renamed channel_id→channel in ca PR #2351 (2026-08-21).
       - alert: CaSpuriousDenyActive
-        expr: sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel_id!="_startup"}[30m])) > 0
+        expr: sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel!="_startup"}[30m])) > 0
         for: 0m
         labels:
           severity: warning

@@ -2788,7 +2788,7 @@
           "id": 910,
           "type": "timeseries",
           "title": "Spurious SDK denies by outcome (pin verdict \u2014 should be flat zero)",
-          "description": "ca.query.spurious_deny_retried: tool calls spuriously auto-denied by the upstream SDK permission-broker bug (anthropics/claude-code#54393) despite bypassPermissions. Pinned to SDK 0.3.195 in ca PR #1915 \u2014 ANY activity here means the pin didn't fix it (alert CaSpuriousDenyActive fires). Series is primed with zeros at boot (channel_id=_startup excluded here) so no-data means the daemon is down, not clean. dropped_subagent = denials never retried (sub-agent believes the boss refused). Post-mortem: brain initiatives/code/ca/ca-sdk-spurious-deny-pin-2026-07.md",
+          "description": "ca.query.spurious_deny_retried: tool calls spuriously auto-denied by the upstream SDK permission-broker bug (anthropics/claude-code#54393) despite bypassPermissions. Pinned to SDK 0.3.195 in ca PR #1915 \u2014 ANY activity here means the pin didn't fix it (alert CaSpuriousDenyActive fires). Series is primed with zeros at boot (channel=_startup excluded here) so no-data means the daemon is down, not clean. dropped_subagent = denials never retried (sub-agent believes the boss refused). Label renamed channel_id\u2192channel in ca PR #2351 (2026-08-21) to match every other query-scoped counter. Post-mortem: brain initiatives/code/ca/ca-sdk-spurious-deny-pin-2026-07.md",
           "datasource": {
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
@@ -2899,7 +2899,7 @@
                 "type": "prometheus",
                 "uid": "PBFA97CFB590B2093"
               },
-              "expr": "sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel_id!=\"_startup\"}[1h]))",
+              "expr": "sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel!=\"_startup\"}[1h]))",
               "legendFormat": "{{outcome}}",
               "refId": "A"
             }

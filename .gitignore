@@ -16,9 +16,8 @@ data/
 *.swo
 .claude/
 
-# Grafana Cloud API token (mounted into the alloy container; used for both
-# the Prometheus remote_write and Loki push basic_auth blocks in
-# config/alloy/config.alloy — one Cloud Access Policy token scoped to
-# metrics:write + logs:write covers both, or split into two files if you
-# prefer separately-scoped tokens per signal)
+# Grafana Cloud OTLP gateway token (mounted into the alloy container; used
+# by otelcol.auth.basic in config/alloy/config.alloy — one Cloud Access
+# Policy token scoped to metrics:write + logs:write + traces:write covers
+# the unified OTLP gateway push for all three signals)
 config/alloy/grafana-cloud-password

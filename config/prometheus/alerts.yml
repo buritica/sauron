@@ -347,7 +347,7 @@ groups:
       # auto-denied by the upstream SDK permission-broker bug
       # (anthropics/claude-code#54393) despite bypassPermissions. The pin to
       # 0.3.195 is believed to stop these; the counter is primed with zeros
-      # at daemon boot (channel_id="_startup") precisely so this series
+      # at daemon boot (channel="_startup") precisely so this series
       # EXISTS at zero and an increase is meaningful. ANY increase post-pin
       # means the version-correlation premise was wrong — the string-match
       # retry workaround (ca #1884) is papering over live denials and the
@@ -355,8 +355,9 @@ groups:
       # outcome ∈ retried|nudge_failed|gave_up|dropped_subagent|suppressed_abort;
       # dropped_subagent is the worst signal (those denials are never
       # retried — the sub-agent silently believes the boss refused).
+      # Label renamed channel_id→channel in ca PR #2351 (2026-08-21).
       - alert: CaSpuriousDenyActive
-        expr: sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel_id!="_startup"}[30m])) > 0
+        expr: sum by (outcome) (increase(ca_query_spurious_deny_retried_total{channel!="_startup"}[30m])) > 0
         for: 0m
         labels:
           severity: warning

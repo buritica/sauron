@@ -1,3 +1,8 @@
+# TODO(2026-08-20 Cloud migration): url below points at a container that no
+# longer exists (prometheus/loki/tempo were removed). If keeping this local
+# Grafana mirror, repoint at the Cloud query endpoint + add basicAuth — see
+# README.md's ☁️ Grafana Cloud section. Left un-guessed here: the exact
+# Cloud query URL/auth provisioning shape needs real per-stack credentials.
 apiVersion: 1
 datasources:
   - name: Loki

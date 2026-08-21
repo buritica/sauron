@@ -1,0 +1,69 @@
+# Grafana Cloud Alertmanager config — ports the now-removed
+# config/alertmanager/alertmanager.yml. Grafana Cloud's Alertmanager speaks
+# the same config format as upstream Alertmanager, so this is close to a
+# straight copy (the ca-webhook receiver was already dead — see that file's
+# final commit before removal — so this only carries the direct-to-Slack
+# path that was actually live). NOT auto-loaded; load via:
+#
+#   mimirtool alertmanager load config/grafana-cloud/alertmanager.yml \
+#     --address=https://<your-stack>.grafana.net --id=<instance-id> \
+#     --key=<api-token-with-alertmanager-write-scope>
+#
+# (or paste through the Cloud Portal's Alerting → Contact points / Notification
+# policies UI). The Slack webhook URL becomes a Cloud Portal secret (Contact
+# points → Slack → webhook URL field) rather than a mounted file — there's no
+# local filesystem for Cloud's Alertmanager to read a secret file from.
+
+global:
+  resolve_timeout: 5m
+
+# Single receiver, so no child routes are needed. Edge-triggered by design:
+# alerts fire when an event is DETECTED and resolve when it clears — no
+# recurring re-notification while a condition holds. Alertmanager has no
+# native "notify once" flag, so repeat_interval is set absurdly high to
+# suppress re-paging; send_resolved on the receiver still delivers the one
+# RESOLVED. Grouping stays coarse to batch a burst into one message.
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 15m
+  repeat_interval: 8760h
+  receiver: 'slack-alerts'
+
+inhibit_rules:
+  # A critical mutes the matching warning for the same alert+instance.
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+  # When a scrape target is down (ServiceDown), the derived "targets
+  # unreachable" alert would be redundant noise — this rule is now DEAD
+  # (PrometheusTargetsDown was dropped in the Cloud migration, see
+  # alert-rules.yml's header), kept only as a record of intent in case an
+  # equivalent Cloud-side rule gets added later.
+  - source_match:
+      alertname: 'ServiceDown'
+    target_match:
+      alertname: 'PrometheusTargetsDown'
+    equal: []
+
+receivers:
+  - name: 'slack-alerts'
+    slack_configs:
+      # api_url_file has no meaning in Cloud's hosted Alertmanager — set the
+      # webhook URL directly in the Cloud Portal's contact point UI instead
+      # (Alerting → Contact points → slack-alerts → Slack webhook URL),
+      # or via `api_url: <the URL>` here if loading through mimirtool (still
+      # don't commit the literal URL — pass it as a mimirtool template
+      # variable or set it post-load through the UI).
+      channel: '#alerts'
+      send_resolved: true
+      # NOTE: alertmanager's template engine has NO `default` function
+      # (that's sprig/Helm) — using it renders the whole message EMPTY at
+      # send time. Use if/else instead.
+      title: '{{ if eq .Status "firing" }}:red_circle: FIRING{{ else }}:white_check_mark: RESOLVED{{ end }}: {{ .CommonLabels.alertname }}{{ if .CommonLabels.site }} [{{ .CommonLabels.site }}]{{ end }}'
+      text: >-
+        {{ range .Alerts -}}
+        • *{{ if .Labels.instance }}{{ .Labels.instance }}{{ else }}{{ .Labels.name }}{{ end }}*{{ if .Labels.mountpoint }} ({{ .Labels.mountpoint }}){{ end }} — {{ .Annotations.description }}
+        {{ end }}
